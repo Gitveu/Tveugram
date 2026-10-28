@@ -160,7 +160,10 @@ class BuildEnvironmentVersions:
             else:
                 bazel_version, bazel_version_sha256 = configuration_dict['bazel'].split(':')
                 self.bazel_version = bazel_version
-                self.bazel_version_sha256 = bazel_version_sha256
+                if not is_apple_silicon() and bazel_version == '8.2.1':
+                    self.bazel_version_sha256 = '366842d097b7aaf8dba4fff2c3ae333e48b28a9d2b440981183aa4afd8a4bf9f'
+                else:
+                    self.bazel_version_sha256 = bazel_version_sha256
             if configuration_dict['xcode'] is None:
                 raise Exception('Missing xcode version in {}'.format(configuration_path))
             else:
