@@ -32,14 +32,14 @@ public struct UserLimitsConfiguration: Equatable {
     
     public static var defaultValue: UserLimitsConfiguration {
         return UserLimitsConfiguration(
-            maxPinnedChatCount: 5,
+            maxPinnedChatCount: 10,
             maxPinnedSavedChatCount: 5,
             maxArchivedPinnedChatCount: 100,
             maxChannelsCount: 500,
             maxPublicLinksCount: 10,
             maxSavedGifCount: 200,
             maxFavedStickerCount: 5,
-            maxFoldersCount: 10,
+            maxFoldersCount: 100,
             maxFolderChatsCount: 100,
             maxCaptionLength: 1024,
             maxUploadFileParts: 4000,
@@ -123,6 +123,7 @@ public struct UserLimitsConfiguration: Equatable {
 
 extension UserLimitsConfiguration {
     init(appConfiguration: AppConfiguration, isPremium: Bool) {
+        let isPremium = LocalPremium.override(isPremium)
         let keySuffix = isPremium ? "_premium" : "_default"
         var defaultValue = UserLimitsConfiguration.defaultValue
         if isPremium {

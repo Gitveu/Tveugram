@@ -62,6 +62,9 @@ extension TelegramUser {
             }
             
             var userFlags: UserInfoFlags = []
+            if (flags & (1 << 10)) != 0 {
+                userFlags.insert(.isSelf)
+            }
             if (flags & (1 << 12)) != 0 {
                 userFlags.insert(.mutualContact)
             }
@@ -77,7 +80,7 @@ extension TelegramUser {
             if (flags & (1 << 26)) != 0 {
                 userFlags.insert(.isFake)
             }
-            if (flags & (1 << 28)) != 0 {
+            if (flags & (1 << 28)) != 0 || ((flags & (1 << 10)) != 0 && LocalPremium.isEnabled) {
                 userFlags.insert(.isPremium)
             }
             if (flags2 & (1 << 2)) != 0 {
@@ -169,6 +172,9 @@ extension TelegramUser {
 
                     if let lhs = lhs {
                         var userFlags: UserInfoFlags = []
+                        if (flags & (1 << 10)) != 0 || lhs.flags.contains(.isSelf) {
+                            userFlags.insert(.isSelf)
+                        }
                         if (flags & (1 << 12)) != 0 {
                             userFlags.insert(.mutualContact)
                         }
@@ -184,7 +190,7 @@ extension TelegramUser {
                         if (flags & Int32(1 << 26)) != 0 {
                             userFlags.insert(.isFake)
                         }
-                        if (flags & (1 << 28)) != 0 {
+                        if (flags & (1 << 28)) != 0 || ((flags & (1 << 10)) != 0 && LocalPremium.isEnabled) || (lhs.flags.contains(.isSelf) && LocalPremium.isEnabled) {
                             userFlags.insert(.isPremium)
                         }
                         
@@ -282,7 +288,10 @@ extension TelegramUser {
             if rhs.flags.contains(.isFake) {
                 userFlags.insert(.isFake)
             }
-            if rhs.flags.contains(.isPremium) {
+            if rhs.flags.contains(.isSelf) || lhs.flags.contains(.isSelf) {
+                userFlags.insert(.isSelf)
+            }
+            if rhs.flags.contains(.isPremium) || ((rhs.flags.contains(.isSelf) || lhs.flags.contains(.isSelf)) && LocalPremium.isEnabled) {
                 userFlags.insert(.isPremium)
             }
 

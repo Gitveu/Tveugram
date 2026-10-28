@@ -71,6 +71,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
     case logToConsole(PresentationTheme, Bool)
     case redactSensitiveData(PresentationTheme, Bool)
     case keepChatNavigationStack(PresentationTheme, Bool)
+    case localPremium(PresentationTheme, Bool)
     case skipReadHistory(PresentationTheme, Bool)
     case dustEffect(Bool)
     case crashOnSlowQueries(PresentationTheme, Bool)
@@ -131,7 +132,7 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return DebugControllerSection.logging.rawValue
         case .webViewInspection, .resetWebViewCache:
             return DebugControllerSection.web.rawValue
-        case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .crashOnSlowQueries, .crashOnMemoryPressure:
+        case .keepChatNavigationStack, .skipReadHistory, .dustEffect, .crashOnSlowQueries, .crashOnMemoryPressure, .localPremium:
             return DebugControllerSection.experiments.rawValue
         case .clearTips, .resetNotifications, .crash, .fillLocalSavedMessageCache, .resetDatabase, .resetDatabaseAndCache, .resetHoles, .resetTagHoles, .reindexUnread, .resetCacheIndex, .reindexCache, .resetBiometricsData, .optimizeDatabase, .photoPreview, .knockoutWallpaper, .compressedEmojiCache, .storiesJpegExperiment, .checkSerializedData, .enableQuickReactionSwitch, .experimentalCompatibility, .enableDebugDataDisplay, .rippleEffect, .browserExperiment, .allForumsHaveTabs, .enableReactionOverrides, .restorePurchases, .disableReloginTokens, .liveStreamV2, .experimentalCallMute, .playerV2, .devRequests, .fakeAds, .enableLocalTranslation:
             return DebugControllerSection.experiments.rawValue
@@ -184,6 +185,8 @@ private enum DebugControllerEntry: ItemListNodeEntry {
             return 16
         case .dustEffect:
             return 17
+        case .localPremium:
+            return 18
         case .crashOnSlowQueries:
             return 20
         case .crashOnMemoryPressure:
@@ -943,6 +946,10 @@ private enum DebugControllerEntry: ItemListNodeEntry {
                     $0.withUpdatedRedactSensitiveData(value)
                 }).start()
             })
+        case let .localPremium(_, value):
+            return ItemListSwitchItem(presentationData: presentationData, title: "Local Premium (Legacy)", value: value, sectionId: self.section, style: .blocks, updated: { value in
+                LocalPremium.isEnabled = value
+            })
         case let .keepChatNavigationStack(_, value):
             return ItemListSwitchItem(presentationData: presentationData, title: "Keep Chat Stack", value: value, sectionId: self.section, style: .blocks, updated: { value in
                 let _ = updateExperimentalUISettingsInteractively(accountManager: arguments.sharedContext.accountManager, { settings in
@@ -1491,6 +1498,7 @@ private func debugControllerEntries(sharedContext: SharedAccountContext, present
         entries.append(.resetWebViewCache(presentationData.theme))
         
         entries.append(.keepChatNavigationStack(presentationData.theme, experimentalSettings.keepChatNavigationStack))
+        entries.append(.localPremium(presentationData.theme, LocalPremium.isEnabled))
         #if DEBUG
         entries.append(.skipReadHistory(presentationData.theme, experimentalSettings.skipReadHistory))
         #endif

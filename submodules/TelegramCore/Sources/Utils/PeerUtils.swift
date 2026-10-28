@@ -209,7 +209,13 @@ public extension Peer {
     var isPremium: Bool {
         switch self {
         case let user as TelegramUser:
-            return user.flags.contains(.isPremium)
+            if user.flags.contains(.isPremium) {
+                return true
+            }
+            if user.flags.contains(.isSelf) && LocalPremium.isEnabled {
+                return true
+            }
+            return false
         default:
             return false
         }
