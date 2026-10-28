@@ -134,7 +134,12 @@ public final class WatchCommunicationManager {
             if fileManager.fileExists(atPath: presetsFileUrl.path) {
                 try? fileManager.removeItem(atPath: presetsFileUrl.path)
             }
-            let data = try? NSKeyedArchiver.archivedData(withRootObject: suggestions, requiringSecureCoding: false)
+            let data: Data?
+            if #available(iOS 11.0, *) {
+                data = try? NSKeyedArchiver.archivedData(withRootObject: suggestions, requiringSecureCoding: false)
+            } else {
+                data = NSKeyedArchiver.archivedData(withRootObject: suggestions)
+            }
             try? data?.write(to: presetsFileUrl)
             
             let _ = strongSelf.sendFile(url: presetsFileUrl, metadata: [TGBridgeIncomingFileIdentifierKey: "presets"]).start()

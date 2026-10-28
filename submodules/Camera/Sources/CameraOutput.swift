@@ -4,7 +4,6 @@ import UIKit
 import Display
 import SwiftSignalKit
 import CoreImage
-import Vision
 import VideoToolbox
 import TelegramCore
 
@@ -361,23 +360,36 @@ final class CameraOutput: NSObject {
                 AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
                 AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC
             ]
+            let h264Codec: String
+            if #available(iOS 11.0, *) {
+                h264Codec = AVVideoCodecType.h264.rawValue
+            } else {
+                h264Codec = "avc1"
+            }
             videoSettings = [
-                AVVideoCodecKey: AVVideoCodecType.h264,
+                AVVideoCodecKey: h264Codec,
                 AVVideoCompressionPropertiesKey: compressionProperties,
                 AVVideoWidthKey: Int(dimensions.width),
                 AVVideoHeightKey: Int(dimensions.height)
             ]
         } else {
-            let codecType: AVVideoCodecType = hasHEVCHardwareEncoder ? .hevc : .h264
             if orientation == .landscapeLeft || orientation == .landscapeRight {
                 dimensions = CGSize(width: 1920, height: 1080)
             } else {
                 dimensions = CGSize(width: 1080, height: 1920)
             }
-            guard let settings = self.videoOutput.recommendedVideoSettings(forVideoCodecType: codecType, assetWriterOutputFileType: .mp4) else {
-                return .complete()
+            if #available(iOS 11.0, *) {
+                let codecType: AVVideoCodecType = hasHEVCHardwareEncoder ? .hevc : .h264
+                guard let settings = self.videoOutput.recommendedVideoSettings(forVideoCodecType: codecType, assetWriterOutputFileType: .mp4) else {
+                    return .complete()
+                }
+                videoSettings = settings
+            } else {
+                guard let settings = self.videoOutput.recommendedVideoSettingsForAssetWriter(writingTo: .mp4) else {
+                    return .complete()
+                }
+                videoSettings = settings
             }
-            videoSettings = settings
         }
         
         let audioSettings = self.audioOutput.recommendedAudioSettingsForAssetWriter(writingTo: .mp4) ?? [:]
@@ -678,12 +690,16 @@ extension CameraOutput: AVCaptureMetadataOutputObjectsDelegate {
 }
 
 private let hasHEVCHardwareEncoder: Bool = {
-    let spec: [CFString: Any] = [:]
-    var outID: CFString?
-    var properties: CFDictionary?
-    let result = VTCopySupportedPropertyDictionaryForEncoder(width: 1920, height: 1080, codecType: kCMVideoCodecType_HEVC, encoderSpecification: spec as CFDictionary, encoderIDOut: &outID, supportedPropertiesOut: &properties)
-    if result == kVTCouldNotFindVideoEncoderErr {
+    if #available(iOS 11.0, *) {
+        let spec: [CFString: Any] = [:]
+        var outID: CFString?
+        var properties: CFDictionary?
+        let result = VTCopySupportedPropertyDictionaryForEncoder(width: 1920, height: 1080, codecType: kCMVideoCodecType_HEVC, encoderSpecification: spec as CFDictionary, encoderIDOut: &outID, supportedPropertiesOut: &properties)
+        if result == kVTCouldNotFindVideoEncoderErr {
+            return false
+        }
+        return result == noErr
+    } else {
         return false
     }
-    return result == noErr
 }()

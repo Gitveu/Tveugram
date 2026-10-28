@@ -1345,23 +1345,25 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
 #endif
     
     if (useH265) {
-        NSDictionary *codecSettings = @
-        {
-        AVVideoAverageBitRateKey: @(videoBitrate),
-        AVVideoCleanApertureKey: videoCleanApertureSettings,
-        AVVideoPixelAspectRatioKey: videoAspectRatioSettings,
-        AVVideoExpectedSourceFrameRateKey: @(frameRate),
-        AVVideoProfileLevelKey: (__bridge NSString *)kVTProfileLevel_HEVC_Main_AutoLevel
-        };
-        
-        return @
-        {
-        AVVideoCodecKey: AVVideoCodecTypeHEVC,
-        AVVideoCompressionPropertiesKey: codecSettings,
-        AVVideoWidthKey: @((NSInteger)dimensions.width),
-        AVVideoHeightKey: @((NSInteger)dimensions.height),
-        AVVideoColorPropertiesKey: hdVideoProperties
-        };
+        if (@available(iOS 11.0, *)) {
+            NSDictionary *codecSettings = @
+            {
+            AVVideoAverageBitRateKey: @(videoBitrate),
+            AVVideoCleanApertureKey: videoCleanApertureSettings,
+            AVVideoPixelAspectRatioKey: videoAspectRatioSettings,
+            AVVideoExpectedSourceFrameRateKey: @(frameRate),
+            AVVideoProfileLevelKey: (__bridge NSString *)kVTProfileLevel_HEVC_Main_AutoLevel
+            };
+            
+            return @
+            {
+            AVVideoCodecKey: AVVideoCodecTypeHEVC,
+            AVVideoCompressionPropertiesKey: codecSettings,
+            AVVideoWidthKey: @((NSInteger)dimensions.width),
+            AVVideoHeightKey: @((NSInteger)dimensions.height),
+            AVVideoColorPropertiesKey: hdVideoProperties
+            };
+        }
     } else {
         NSDictionary *codecSettings = @
         {
@@ -1373,10 +1375,17 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
         AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC
         };
         
+        NSString *h264Codec = @"avc1";
+        if (@available(iOS 11.0, *)) {
+            h264Codec = AVVideoCodecTypeH264;
+        } else {
+            h264Codec = AVVideoCodecH264;
+        }
+        
 #if TARGET_IPHONE_SIMULATOR
         return @
         {
-        AVVideoCodecKey: AVVideoCodecTypeH264,
+        AVVideoCodecKey: h264Codec,
         AVVideoCompressionPropertiesKey: codecSettings,
         AVVideoWidthKey: @((NSInteger)dimensions.width),
         AVVideoHeightKey: @((NSInteger)dimensions.height)
@@ -1384,7 +1393,7 @@ static CGFloat progressOfSampleBufferInTimeRange(CMSampleBufferRef sampleBuffer,
 #endif
         return @
         {
-        AVVideoCodecKey: AVVideoCodecTypeH264,
+        AVVideoCodecKey: h264Codec,
         AVVideoCompressionPropertiesKey: codecSettings,
         AVVideoWidthKey: @((NSInteger)dimensions.width),
         AVVideoHeightKey: @((NSInteger)dimensions.height),

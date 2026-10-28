@@ -478,17 +478,23 @@ private class BubbleMaskLayer: SimpleLayer {
     private class CornerLayer: SimpleLayer {
         private let contentLayer = SimpleLayer()
         
+        let cornerMask: DeviceCornerMask
+        
         override init(layer: Any) {
+            self.cornerMask = []
             super.init(layer: layer)
         }
         
-        init(cornerMask: CACornerMask) {
+        init(cornerMask: DeviceCornerMask) {
+            self.cornerMask = cornerMask
             super.init()
             self.masksToBounds = true
             
             self.contentLayer.backgroundColor = UIColor.white.cgColor
             self.contentLayer.masksToBounds = true
-            self.contentLayer.maskedCorners = cornerMask
+            if #available(iOS 11.0, *) {
+                self.contentLayer.maskedCorners = CACornerMask(rawValue: cornerMask.rawValue)
+            }
             self.addSublayer(self.contentLayer)
         }
         
@@ -499,7 +505,7 @@ private class BubbleMaskLayer: SimpleLayer {
         func update(size: CGSize, cornerRadius: CGFloat, animator: ControlledTransitionAnimator) {
             animator.updateCornerRadius(layer: self.contentLayer, cornerRadius: cornerRadius, completion: nil)
             
-            let mask = self.contentLayer.maskedCorners
+            let mask = self.cornerMask
             var origin = CGPoint()
             if mask == .layerMinXMinYCorner {
                 origin = .zero

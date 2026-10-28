@@ -1849,14 +1849,18 @@ extension CodableToolValue: Codable {
 }
 
 private let hasHEVCHardwareEncoder: Bool = {
-    let spec: [CFString: Any] = [:]
-    var outID: CFString?
-    var properties: CFDictionary?
-    let result = VTCopySupportedPropertyDictionaryForEncoder(width: 1920, height: 1080, codecType: kCMVideoCodecType_HEVC, encoderSpecification: spec as CFDictionary, encoderIDOut: &outID, supportedPropertiesOut: &properties)
-    if result == kVTCouldNotFindVideoEncoderErr {
+    if #available(iOS 11.0, *) {
+        let spec: [CFString: Any] = [:]
+        var outID: CFString?
+        var properties: CFDictionary?
+        let result = VTCopySupportedPropertyDictionaryForEncoder(width: 1920, height: 1080, codecType: kCMVideoCodecType_HEVC, encoderSpecification: spec as CFDictionary, encoderIDOut: &outID, supportedPropertiesOut: &properties)
+        if result == kVTCouldNotFindVideoEncoderErr {
+            return false
+        }
+        return result == noErr
+    } else {
         return false
     }
-    return result == noErr
 }()
 
 
@@ -1959,13 +1963,24 @@ public func recommendedVideoExportConfiguration(values: MediaEditorValues, durat
         codecType = "VP9"
         compressionProperties = [:]
     } else if useHEVC {
-        codecType = AVVideoCodecType.hevc
-        compressionProperties = [
-            AVVideoAverageBitRateKey: videoBitrate * 1000,
-            AVVideoProfileLevelKey: kVTProfileLevel_HEVC_Main_AutoLevel
-        ]
+        if #available(iOS 11.0, *) {
+            codecType = AVVideoCodecType.hevc
+            compressionProperties = [
+                AVVideoAverageBitRateKey: videoBitrate * 1000,
+                AVVideoProfileLevelKey: kVTProfileLevel_HEVC_Main_AutoLevel
+            ]
+        } else {
+            codecType = "avc1"
+            compressionProperties = [
+                AVVideoAverageBitRateKey: videoBitrate * 1000
+            ]
+        }
     } else {
-        codecType = AVVideoCodecType.h264
+        if #available(iOS 11.0, *) {
+            codecType = AVVideoCodecType.h264
+        } else {
+            codecType = "avc1"
+        }
         compressionProperties = [
             AVVideoAverageBitRateKey: videoBitrate * 1000,
             AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
