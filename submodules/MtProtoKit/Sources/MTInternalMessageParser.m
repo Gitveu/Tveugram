@@ -683,7 +683,7 @@
 
 + (NSData *)decompressGZip:(NSData *)data
 {
-    const int kMemoryChunkSize = 1024;
+    enum { kMemoryChunkSize = 1024 };
     
     NSUInteger length = [data length];
     int windowBits = 15 + 32; //Default + gzip header instead of zlib header

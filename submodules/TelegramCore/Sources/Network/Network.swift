@@ -1254,7 +1254,13 @@ class Keychain: NSObject, MTKeychain {
             return
         }
         MTContext.perform(objCTry: {
-            if let data = try? NSKeyedArchiver.archivedData(withRootObject: object, requiringSecureCoding: false) {
+            let data: Data?
+            if #available(iOS 11.0, *) {
+                data = try? NSKeyedArchiver.archivedData(withRootObject: object, requiringSecureCoding: false)
+            } else {
+                data = NSKeyedArchiver.archivedData(withRootObject: object)
+            }
+            if let data = data {
                 self.set(group + ":" + aKey, data)
             }
         })

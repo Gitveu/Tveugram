@@ -82,14 +82,27 @@ private final class NetworkTypeManagerImpl {
         self.updated = updated
         
         #if os(iOS)
-        let accessTechnology = CTTelephonyNetworkInfo().serviceCurrentRadioAccessTechnology?.values.first ?? ""
+        let getAccessTechnology: () -> String = {
+            if #available(iOS 12.0, *) {
+                return CTTelephonyNetworkInfo().serviceCurrentRadioAccessTechnology?.values.first ?? ""
+            } else {
+                return CTTelephonyNetworkInfo().currentRadioAccessTechnology ?? ""
+            }
+        }
+        let accessTechnology = getAccessTechnology()
         self.currentCellularType = CellularNetworkType(accessTechnology: accessTechnology)
-        self.cellularTypeObserver = NotificationCenter.default.addObserver(forName: NSNotification.Name.CTServiceRadioAccessTechnologyDidChange, object: nil, queue: nil, using: { [weak self] notification in
+        let notificationName: NSNotification.Name
+        if #available(iOS 12.0, *) {
+            notificationName = NSNotification.Name.CTServiceRadioAccessTechnologyDidChange
+        } else {
+            notificationName = NSNotification.Name.CTRadioAccessTechnologyDidChange
+        }
+        self.cellularTypeObserver = NotificationCenter.default.addObserver(forName: notificationName, object: nil, queue: nil, using: { [weak self] notification in
             queue.async {
                 guard let strongSelf = self else {
                     return
                 }
-                let accessTechnology = CTTelephonyNetworkInfo().serviceCurrentRadioAccessTechnology?.values.first ?? ""
+                let accessTechnology = getAccessTechnology()
                 let cellularType = CellularNetworkType(accessTechnology: accessTechnology)
                 if strongSelf.currentCellularType != cellularType {
                     strongSelf.currentCellularType = cellularType
@@ -136,7 +149,7 @@ private final class NetworkTypeManagerImpl {
         self.networkTypeDisposable?.dispose()
         #if os(iOS)
         if let observer = self.cellularTypeObserver {
-            NotificationCenter.default.removeObserver(observer, name: NSNotification.Name.CTServiceRadioAccessTechnologyDidChange, object: nil)
+            NotificationCenter.default.removeObserver(observer)
         }
         #endif
     }

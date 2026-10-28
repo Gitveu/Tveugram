@@ -10,6 +10,9 @@
 
 #import <objc/message.h>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 static void MTAvailabilityCallback(SCNetworkReachabilityRef target, SCNetworkReachabilityFlags flags, void *info);
 
 @class MTNetworkAvailability;
@@ -173,3 +176,5 @@ static void MTAvailabilityCallback(__unused SCNetworkReachabilityRef target, SCN
     MTNetworkAvailability *availability = availabilityContext.context;
     [availability updateReachability:flags notify:true];
 }
+
+#pragma clang diagnostic pop
