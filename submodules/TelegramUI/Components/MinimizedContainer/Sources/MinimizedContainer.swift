@@ -362,7 +362,9 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
         self.dimView.isUserInteractionEnabled = false
         
         self.scrollView = ScrollViewImpl()
-        self.scrollView.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 11.0, *) {
+            self.scrollView.contentInsetAdjustmentBehavior = .never
+        }
         self.scrollView.alwaysBounceVertical = true
         
         super.init()

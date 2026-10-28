@@ -524,7 +524,7 @@ public final class MetalEngine {
         let width: Int
         let height: Int
         
-        let ioSurface: IOSurface
+        let ioSurface: AnyObject
         let texture: MTLTexture
         let packContext: ShelfPackContext
         
@@ -533,6 +533,10 @@ public final class MetalEngine {
         }
         
         init?(id: Int, device: MTLDevice, width: Int, height: Int) {
+            guard #available(iOS 11.0, *) else {
+                return nil
+            }
+            
             self.id = id
             self.width = width
             self.height = height

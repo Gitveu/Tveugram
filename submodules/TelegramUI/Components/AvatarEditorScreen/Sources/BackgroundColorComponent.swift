@@ -63,7 +63,9 @@ final class BackgroundColorComponent: Component {
         
         override init(frame: CGRect) {
             self.scrollView = UIScrollView()
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.showsVerticalScrollIndicator = false
             

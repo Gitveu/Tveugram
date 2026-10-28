@@ -6503,8 +6503,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         
         if !self.didSetupDropToPaste {
             self.didSetupDropToPaste = true
-            let dropInteraction = UIDropInteraction(delegate: self)
-            self.chatDisplayNode.view.addInteraction(dropInteraction)
+            if #available(iOS 11.0, *) {
+                let dropInteraction = UIDropInteraction(delegate: self)
+                self.chatDisplayNode.view.addInteraction(dropInteraction)
+            }
         }
         
         if !self.checkedPeerChatServiceActions {

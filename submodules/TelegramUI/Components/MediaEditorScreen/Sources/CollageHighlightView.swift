@@ -22,8 +22,10 @@ final class CollageHighlightView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
         
-    func update(size: CGSize, corners: CACornerMask, completion: @escaping () -> Void) {
-        self.borderLayer.maskedCorners = corners
+    func update(size: CGSize, corners: DeviceCornerMask, completion: @escaping () -> Void) {
+        if #available(iOS 11.0, *) {
+            self.borderLayer.maskedCorners = CACornerMask(rawValue: corners.rawValue)
+        }
         self.borderLayer.frame = CGRect(origin: .zero, size: size)
         
         let color = UIColor.white.withAlphaComponent(0.7)

@@ -187,7 +187,9 @@ final class SelectionPanelComponent: Component {
             self.backgroundMaskPanelView.layer.cornerRadius = 10.0
             
             self.scrollView = UIScrollView(frame: .zero)
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.showsVerticalScrollIndicator = false
             self.scrollView.layer.cornerRadius = 10.0

@@ -5744,7 +5744,7 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
                     height: frame.height / storyDimensions.height * self.previewContainerView.bounds.height
                 )
                 
-                var corners: CACornerMask = []
+                var corners: DeviceCornerMask = []
                 if frame.minX <= .ulpOfOne && frame.minY <= .ulpOfOne {
                     corners.insert(.layerMinXMinYCorner)
                 }
@@ -6901,8 +6901,10 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
 
         super.displayNodeDidLoad()
         
-        let dropInteraction = UIDropInteraction(delegate: self)
-        self.displayNode.view.addInteraction(dropInteraction)
+        if #available(iOS 11.0, *) {
+            let dropInteraction = UIDropInteraction(delegate: self)
+            self.displayNode.view.addInteraction(dropInteraction)
+        }
         
         Queue.mainQueue().after(0.4) {
             self.adminedChannels.set(.single([]) |> then(self.context.engine.peers.channelsForStories()))

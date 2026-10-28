@@ -136,7 +136,9 @@ final class PeerAllowedReactionsScreenComponent: Component {
             self.scrollView.scrollsToTop = false
             self.scrollView.delaysContentTouches = false
             self.scrollView.canCancelContentTouches = true
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.alwaysBounceVertical = true
             
             super.init(frame: frame)

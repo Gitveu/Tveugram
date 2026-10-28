@@ -2822,8 +2822,10 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
 
         super.displayNodeDidLoad()
         
-        let dropInteraction = UIDropInteraction(delegate: self)
-        self.drawingView.addInteraction(dropInteraction)
+        if #available(iOS 11.0, *) {
+            let dropInteraction = UIDropInteraction(delegate: self)
+            self.drawingView.addInteraction(dropInteraction)
+        }
     }
     
     public func generateDrawingResultData() -> DrawingResultData? {

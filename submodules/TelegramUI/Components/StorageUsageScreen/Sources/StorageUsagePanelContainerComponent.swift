@@ -180,7 +180,9 @@ private final class StorageUsageHeaderComponent: Component {
         override init(frame: CGRect) {
             self.activeItemLayer = SimpleLayer()
             self.activeItemLayer.cornerRadius = 2.0
-            self.activeItemLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.activeItemLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             
             super.init(frame: frame)
             

@@ -38,13 +38,13 @@ private class MediaPickerSelectedItemNode: ASDisplayNode {
     
     private var validLayout: CGSize?
     
-    var corners: CACornerMask = [] {
+    var corners: DeviceCornerMask = [] {
         didSet {
             if #available(iOS 13.0, *) {
                 self.layer.cornerCurve = .circular
             }
             if #available(iOS 11.0, *) {
-                self.layer.maskedCorners = corners
+                self.layer.maskedCorners = CACornerMask(rawValue: self.corners.rawValue)
             }
         }
     }
@@ -1150,7 +1150,7 @@ final class MediaPickerSelectedListNode: ASDisplayNode, ASScrollViewDelegate, AS
             
             for (item, itemRect, itemPosition) in items {
                 if let identifier = item.uniqueIdentifier, let itemNode = self.itemNodes[identifier] {
-                    var corners: CACornerMask = []
+                    var corners: DeviceCornerMask = []
                     if itemPosition.contains(.top) && itemPosition.contains(.left) {
                         corners.insert(.layerMinXMinYCorner)
                     }
@@ -1521,7 +1521,7 @@ private class ReorderingGestureRecognizer: UIGestureRecognizer {
 }
 
 
-private func generateShadowImage(corners: CACornerMask, radius: CGFloat) -> UIImage? {
+private func generateShadowImage(corners: DeviceCornerMask, radius: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: 120.0, height: 120), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -1557,7 +1557,7 @@ private final class CopyView: UIView {
     let shadow: UIImageView
     var snapshotView: UIView?
     
-    init(frame: CGRect, corners: CACornerMask, radius: CGFloat) {
+    init(frame: CGRect, corners: DeviceCornerMask, radius: CGFloat) {
         self.shadow = UIImageView()
         self.shadow.contentMode = .scaleToFill
         

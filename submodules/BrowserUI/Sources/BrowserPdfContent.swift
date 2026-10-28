@@ -17,6 +17,7 @@ import UndoUI
 import UrlEscaping
 import PDFKit
 
+@available(iOS 11.0, *)
 final class BrowserPdfContent: UIView, BrowserContent, UIScrollViewDelegate, PDFDocumentDelegate {
     private let context: AccountContext
     private var presentationData: PresentationData

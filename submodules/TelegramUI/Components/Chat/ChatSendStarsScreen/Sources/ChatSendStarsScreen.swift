@@ -1023,7 +1023,9 @@ private final class ChatSendStarsScreenComponent: Component {
             self.dimView = UIView()
             
             self.backgroundLayer = SimpleLayer()
-            self.backgroundLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.backgroundLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             self.backgroundLayer.cornerRadius = 10.0
             
             self.navigationBarContainer = SparseContainerView()

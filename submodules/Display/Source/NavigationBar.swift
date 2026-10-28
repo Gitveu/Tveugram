@@ -303,6 +303,17 @@ public final class NavigationBackgroundNode: ASDisplayNode {
     }
 }
 
+public struct DeviceCornerMask: OptionSet {
+    public var rawValue: UInt
+    public init(rawValue: UInt) {
+        self.rawValue = rawValue
+    }
+    public static let layerMinXMinYCorner = DeviceCornerMask(rawValue: 1 << 0)
+    public static let layerMaxXMinYCorner = DeviceCornerMask(rawValue: 1 << 1)
+    public static let layerMinXMaxYCorner = DeviceCornerMask(rawValue: 1 << 2)
+    public static let layerMaxXMaxYCorner = DeviceCornerMask(rawValue: 1 << 3)
+}
+
 open class BlurredBackgroundView: UIView {
     private var _color: UIColor?
 
@@ -404,7 +415,7 @@ open class BlurredBackgroundView: UIView {
         self.updateBackgroundBlur(forceKeepBlur: forceKeepBlur)
     }
 
-    public func update(size: CGSize, cornerRadius: CGFloat = 0.0, maskedCorners: CACornerMask = [.layerMaxXMaxYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMinXMinYCorner], transition: ContainedViewLayoutTransition) {
+    public func update(size: CGSize, cornerRadius: CGFloat = 0.0, maskedCorners: DeviceCornerMask = [.layerMaxXMaxYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMinXMinYCorner], transition: ContainedViewLayoutTransition) {
         self.validLayout = (size, cornerRadius)
 
         let contentFrame = CGRect(origin: CGPoint(), size: size)
@@ -419,7 +430,7 @@ open class BlurredBackgroundView: UIView {
         }
         
         if #available(iOS 11.0, *) {
-            self.backgroundView.layer.maskedCorners = maskedCorners
+            self.backgroundView.layer.maskedCorners = CACornerMask(rawValue: maskedCorners.rawValue)
         }
 
         transition.updateCornerRadius(layer: self.backgroundView.layer, cornerRadius: cornerRadius)
@@ -428,9 +439,14 @@ open class BlurredBackgroundView: UIView {
             effectView.clipsToBounds = !cornerRadius.isZero
             
             if #available(iOS 11.0, *) {
-                effectView.layer.maskedCorners = maskedCorners
+                effectView.layer.maskedCorners = CACornerMask(rawValue: maskedCorners.rawValue)
             }
         }
+    }
+
+    @available(iOS 11.0, *)
+    public func update(size: CGSize, cornerRadius: CGFloat = 0.0, maskedCorners: CACornerMask, transition: ContainedViewLayoutTransition) {
+        self.update(size: size, cornerRadius: cornerRadius, maskedCorners: DeviceCornerMask(rawValue: maskedCorners.rawValue), transition: transition)
     }
     
     public func update(size: CGSize, cornerRadius: CGFloat = 0.0, animator: ControlledTransitionAnimator) {

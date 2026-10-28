@@ -3291,7 +3291,7 @@ private class ReorderingGestureRecognizer: UIGestureRecognizer {
     }
 }
 
-private func generateShadowImage(corners: CACornerMask, radius: CGFloat) -> UIImage? {
+private func generateShadowImage(corners: DeviceCornerMask, radius: CGFloat) -> UIImage? {
     return generateImage(CGSize(width: 120.0, height: 120), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -3327,7 +3327,7 @@ private final class CopyView: UIView {
     let shadow: UIImageView
     var snapshotView: UIView?
     
-    init(frame: CGRect, corners: CACornerMask, radius: CGFloat) {
+    init(frame: CGRect, corners: DeviceCornerMask, radius: CGFloat) {
         self.shadow = UIImageView()
         self.shadow.contentMode = .scaleToFill
         

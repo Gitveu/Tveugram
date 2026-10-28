@@ -341,7 +341,9 @@ public final class InviteLinkInviteController: ViewController {
             self.headerBackgroundNode = ASDisplayNode()
             self.headerBackgroundNode.backgroundColor = getBackgroundColor(theme: self.presentationData.theme)
             self.headerBackgroundNode.cornerRadius = 16.0
-            self.headerBackgroundNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.headerBackgroundNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             
             self.titleNode = ImmediateTextNode()
             self.titleNode.maximumNumberOfLines = 1

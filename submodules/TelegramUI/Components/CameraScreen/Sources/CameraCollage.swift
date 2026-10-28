@@ -499,7 +499,9 @@ final class CameraCollageView: UIView, UIGestureRecognizerDelegate {
             super.init(frame: frame)
             
             self.scrollView.delegate = self
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.contentInset = .zero
             self.scrollView.showsHorizontalScrollIndicator = false
             self.scrollView.showsVerticalScrollIndicator = false

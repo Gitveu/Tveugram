@@ -725,7 +725,9 @@ final class VideoChatParticipantsComponent: Component {
             self.scrollView.delaysContentTouches = false
             self.scrollView.canCancelContentTouches = true
             self.scrollView.clipsToBounds = false
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             if #available(iOS 13.0, *) {
                 self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
             }
@@ -740,7 +742,9 @@ final class VideoChatParticipantsComponent: Component {
             self.separateVideoScrollView.delaysContentTouches = false
             self.separateVideoScrollView.canCancelContentTouches = true
             self.separateVideoScrollView.clipsToBounds = false
-            self.separateVideoScrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.separateVideoScrollView.contentInsetAdjustmentBehavior = .never
+            }
             if #available(iOS 13.0, *) {
                 self.separateVideoScrollView.automaticallyAdjustsScrollIndicatorInsets = false
             }

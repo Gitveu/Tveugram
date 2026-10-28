@@ -5,6 +5,22 @@ import ComponentFlow
 import HierarchyTrackingLayer
 import TelegramPresentationData
 
+private extension CGPath {
+    func forEach(_ body: @escaping (UnsafePointer<CGPathElement>) -> Void) {
+        if #available(iOS 11.0, *) {
+            self.applyWithBlock(body)
+        } else {
+            var bodyCopy = body
+            withUnsafeMutablePointer(to: &bodyCopy) { pointer in
+                self.apply(info: pointer) { info, element in
+                    let b = info!.assumingMemoryBound(to: ((UnsafePointer<CGPathElement>) -> Void).self).pointee
+                    b(element)
+                }
+            }
+        }
+    }
+}
+
 private extension CGFloat {
     func remap(fromLow: CGFloat, fromHigh: CGFloat, toLow: CGFloat, toHigh: CGFloat) -> CGFloat {
         guard (fromHigh - fromLow) != 0 else {
@@ -689,7 +705,7 @@ public final class AvatarStoryIndicatorComponent: Component {
                         
                         var startPoint: CGPoint?
                         var vertices: [CurveVertex] = []
-                        path.cgPath.applyWithBlock({ element in
+                        path.cgPath.forEach({ element in
                             switch element.pointee.type {
                             case .moveToPoint:
                                 startPoint = element.pointee.points[0]

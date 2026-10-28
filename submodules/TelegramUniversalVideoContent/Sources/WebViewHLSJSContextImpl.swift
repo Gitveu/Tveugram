@@ -52,7 +52,9 @@ final class WebViewHLSJSContextImpl: HLSJSContext {
         webView.allowsLinkPreview = false
         webView.allowsBackForwardNavigationGestures = false
         webView.accessibilityIgnoresInvertColors = true
-        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 11.0, *) {
+            webView.scrollView.contentInsetAdjustmentBehavior = .never
+        }
         webView.alpha = 0.0
         
         if #available(iOS 16.4, *) {

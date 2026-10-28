@@ -12,7 +12,9 @@ final class CropScrollView: UIScrollView, UIScrollViewDelegate {
         self.backgroundColor = .clear
         self.showsVerticalScrollIndicator = false
         self.showsHorizontalScrollIndicator = false
-        self.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 11.0, *) {
+            self.contentInsetAdjustmentBehavior = .never
+        }
         
         self.clipsToBounds = false
         self.bouncesZoom = true

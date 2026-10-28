@@ -550,11 +550,13 @@ vertex StrokeVertexOut strokeTerminalVertex(
 
     // Decide the resolution of whichever feature we're drawing. n is twice the number of points used since
     // that's the only form in which we use this number.
-    float res = (isCap ? _capJoinRes2.x : _capJoinRes2.y);
+    float2 capJoinRes2 = _capJoinRes2;
+    float2 vertCnt2 = _vertCnt2;
+    float res = (isCap ? capJoinRes2.x : capJoinRes2.y);
 
     // Shift the index to send unused vertices to an index below zero, which will then just get clamped to
     // zero and result in repeated points, i.e. degenerate triangles.
-    i -= max(0.0, (mirror ? _vertCnt2.y : _vertCnt2.x) - res);
+    i -= max(0.0, (mirror ? vertCnt2.y : vertCnt2.x) - res);
 
     // Use the direction to offset the index by one. This has the effect of flipping the winding number so
     // that it's always consistent no matter which direction the join turns.
@@ -749,11 +751,13 @@ vertex StrokeVertexOut strokeInnerVertex(
     
     // Decide the resolution of whichever feature we're drawing. n is twice the number of points used since
     // that's the only form in which we use this number.
-    float res = (isCap ? _capJoinRes2.x : _capJoinRes2.y);
+    float2 capJoinRes2 = _capJoinRes2;
+    float2 vertCnt2 = _vertCnt2;
+    float res = (isCap ? capJoinRes2.x : capJoinRes2.y);
     
     // Shift the index to send unused vertices to an index below zero, which will then just get clamped to
     // zero and result in repeated points, i.e. degenerate triangles.
-    i -= max(0.0, (mirror ? _vertCnt2.y : _vertCnt2.x) - res);
+    i -= max(0.0, (mirror ? vertCnt2.y : vertCnt2.x) - res);
     
     // Use the direction to offset the index by one. This has the effect of flipping the winding number so
     // that it's always consistent no matter which direction the join turns.

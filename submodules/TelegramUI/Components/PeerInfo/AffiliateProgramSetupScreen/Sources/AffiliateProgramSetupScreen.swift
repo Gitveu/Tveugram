@@ -154,7 +154,9 @@ final class AffiliateProgramSetupScreenComponent: Component {
             self.scrollView.scrollsToTop = false
             self.scrollView.delaysContentTouches = false
             self.scrollView.canCancelContentTouches = true
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.alwaysBounceVertical = true
             
             self.titleTransformContainer = UIView()

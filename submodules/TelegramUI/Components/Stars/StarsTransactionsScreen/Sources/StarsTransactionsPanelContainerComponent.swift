@@ -224,7 +224,9 @@ private final class StarsTransactionsHeaderComponent: Component {
         override init(frame: CGRect) {
             self.activeItemLayer = SimpleLayer()
             self.activeItemLayer.cornerRadius = 2.0
-            self.activeItemLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.activeItemLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             
             super.init(frame: frame)
             
@@ -447,7 +449,9 @@ final class StarsTransactionsPanelContainerComponent: Component {
         override init(frame: CGRect) {
             self.topPanelClippingView = UIView()
             self.topPanelClippingView.clipsToBounds = true
-            self.topPanelClippingView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.topPanelClippingView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             
             self.topPanelBackgroundView = UIView()
             

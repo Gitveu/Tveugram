@@ -50,35 +50,43 @@ public struct LocalAuth {
         }
         
         public func encrypt(data: Data) -> Data? {
-            var error: Unmanaged<CFError>?
-            let cipherText = SecKeyCreateEncryptedData(self.publicKey, .eciesEncryptionCofactorVariableIVX963SHA512AESGCM, data as CFData, &error)
-            if let error {
-                error.release()
-            }
-            guard let cipherText else {
+            if #available(iOS 11.0, *) {
+                var error: Unmanaged<CFError>?
+                let cipherText = SecKeyCreateEncryptedData(self.publicKey, .eciesEncryptionCofactorVariableIVX963SHA512AESGCM, data as CFData, &error)
+                if let error {
+                    error.release()
+                }
+                guard let cipherText else {
+                    return nil
+                }
+                
+                let result = cipherText as Data
+                return result
+            } else {
                 return nil
             }
-            
-            let result = cipherText as Data
-            return result
         }
         
         public func decrypt(data: Data) -> DecryptionResult {
-            var maybeError: Unmanaged<CFError>?
-            let plainText = SecKeyCreateDecryptedData(self.privateKey, .eciesEncryptionCofactorVariableIVX963SHA512AESGCM, data as CFData, &maybeError)
-            let error = maybeError?.takeRetainedValue()
-            
-            guard let plainText else {
-                if let error {
-                    if CFErrorGetCode(error) == -2 {
-                        return .error(.cancelled)
+            if #available(iOS 11.0, *) {
+                var maybeError: Unmanaged<CFError>?
+                let plainText = SecKeyCreateDecryptedData(self.privateKey, .eciesEncryptionCofactorVariableIVX963SHA512AESGCM, data as CFData, &maybeError)
+                let error = maybeError?.takeRetainedValue()
+                
+                guard let plainText else {
+                    if let error {
+                        if CFErrorGetCode(error) == -2 {
+                            return .error(.cancelled)
+                        }
                     }
+                    return .error(.generic)
                 }
+                
+                let result = plainText as Data
+                return .result(result)
+            } else {
                 return .error(.generic)
             }
-            
-            let result = plainText as Data
-            return .result(result)
         }
     }
     #endif
@@ -86,15 +94,19 @@ public struct LocalAuth {
     public static var biometricAuthentication: LocalAuthBiometricAuthentication? {
         let context = LAContext()
         if context.canEvaluatePolicy(LAPolicy(rawValue: Int(kLAPolicyDeviceOwnerAuthenticationWithBiometrics))!, error: nil) {
-            switch context.biometryType {
-            case .faceID, .opticID:
-                return .faceId
-            case .touchID:
+            if #available(iOS 11.0, *) {
+                switch context.biometryType {
+                case .faceID, .opticID:
+                    return .faceId
+                case .touchID:
+                    return .touchId
+                case .none:
+                    return nil
+                @unknown default:
+                    return nil
+                }
+            } else {
                 return .touchId
-            case .none:
-                return nil
-            @unknown default:
-                return nil
             }
         } else {
             return nil

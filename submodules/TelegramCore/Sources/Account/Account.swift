@@ -299,7 +299,13 @@ public func accountWithId(accountManager: AccountManager<TelegramAccountManagerT
                             }
                             
                             transaction.setState(backupState)
-                            if let data = try? NSKeyedArchiver.archivedData(withRootObject: dict, requiringSecureCoding: false) {
+                            let data: Data?
+                            if #available(iOS 11.0, *) {
+                                data = try? NSKeyedArchiver.archivedData(withRootObject: dict, requiringSecureCoding: false)
+                            } else {
+                                data = NSKeyedArchiver.archivedData(withRootObject: dict)
+                            }
+                            if let data = data {
                                 transaction.setKeychainEntry(data, forKey: "persistent:datacenterAuthInfoById")
                             }
                         }
@@ -475,11 +481,9 @@ public func dataWithHexString(_ string: String) -> Data {
         let subIndex = hex.index(hex.startIndex, offsetBy: 2)
         let c = String(hex[..<subIndex])
         hex = String(hex[subIndex...])
-        var ch: UInt32 = 0
-        if !Scanner(string: c).scanHexInt32(&ch) {
+        guard var char = UInt8(c, radix: 16) else {
             return Data()
         }
-        var char = UInt8(ch)
         data.append(&char, count: 1)
     }
     return data

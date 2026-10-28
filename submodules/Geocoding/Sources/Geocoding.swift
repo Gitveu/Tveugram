@@ -7,9 +7,16 @@ import SwiftSignalKit
 public func geocodeLocation(address: String, locale: Locale? = nil) -> Signal<[CLPlacemark]?, NoError> {
     return Signal { subscriber in
         let geocoder = CLGeocoder()
-        geocoder.geocodeAddressString(address, in: nil, preferredLocale: locale) { placemarks, _ in
-            subscriber.putNext(placemarks)
-            subscriber.putCompletion()
+        if #available(iOS 11.0, *) {
+            geocoder.geocodeAddressString(address, in: nil, preferredLocale: locale) { placemarks, _ in
+                subscriber.putNext(placemarks)
+                subscriber.putCompletion()
+            }
+        } else {
+            geocoder.geocodeAddressString(address) { placemarks, _ in
+                subscriber.putNext(placemarks)
+                subscriber.putCompletion()
+            }
         }
         return ActionDisposable {
             geocoder.cancelGeocode()
@@ -20,13 +27,19 @@ public func geocodeLocation(address: String, locale: Locale? = nil) -> Signal<[C
 public func geocodeLocation(address: CNPostalAddress, locale: Locale? = nil) -> Signal<(Double, Double)?, NoError> {
     return Signal { subscriber in
         let geocoder = CLGeocoder()
-        geocoder.geocodePostalAddress(address, preferredLocale: locale) { placemarks, _ in
+        let handler: ([CLPlacemark]?, Error?) -> Void = { placemarks, _ in
             if let location = placemarks?.first?.location {
                 subscriber.putNext((location.coordinate.latitude, location.coordinate.longitude))
             } else {
                 subscriber.putNext(nil)
             }
             subscriber.putCompletion()
+        }
+        if #available(iOS 11.0, *) {
+            geocoder.geocodePostalAddress(address, preferredLocale: locale, completionHandler: handler)
+        } else {
+            let addressString = CNPostalAddressFormatter.string(from: address, style: .mailingAddress)
+            geocoder.geocodeAddressString(addressString, completionHandler: handler)
         }
         return ActionDisposable {
             geocoder.cancelGeocode()
@@ -74,7 +87,7 @@ public struct ReverseGeocodedPlacemark {
 public func reverseGeocodeLocation(latitude: Double, longitude: Double, locale: Locale? = nil) -> Signal<ReverseGeocodedPlacemark?, NoError> {
     return Signal { subscriber in
         let geocoder = CLGeocoder()
-        geocoder.reverseGeocodeLocation(CLLocation(latitude: latitude, longitude: longitude), preferredLocale: locale, completionHandler: { placemarks, _ in
+        let handler: ([CLPlacemark]?, Error?) -> Void = { placemarks, _ in
             if let placemarks, let placemark = placemarks.first {
                 let countryName = placemark.country
                 let countryCode = placemark.isoCountryCode
@@ -94,7 +107,13 @@ public func reverseGeocodeLocation(latitude: Double, longitude: Double, locale: 
                 subscriber.putNext(nil)
                 subscriber.putCompletion()
             }
-        })
+        }
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        if #available(iOS 11.0, *) {
+            geocoder.reverseGeocodeLocation(location, preferredLocale: locale, completionHandler: handler)
+        } else {
+            geocoder.reverseGeocodeLocation(location, completionHandler: handler)
+        }
         return ActionDisposable {
             geocoder.cancelGeocode()
         }

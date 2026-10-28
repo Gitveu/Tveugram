@@ -110,6 +110,8 @@ namespace AS {
 // and not again.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability"
+#pragma clang diagnostic ignored "-Wthread-safety-analysis"
+#pragma clang diagnostic ignored "-Wthread-safety"
   class Mutex
   {
   public:

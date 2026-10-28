@@ -501,6 +501,7 @@ public class CameraPreviewView: MTKView {
     var detectedFaceRectangleShapeLayer: CAShapeLayer?
     var detectedFaceLandmarksShapeLayer: CAShapeLayer?
     
+    @available(iOS 11.0, *)
     func drawFaceObservations(_ faceObservations: [VNFaceObservation]) {
         guard let faceRectangleShapeLayer = self.detectedFaceRectangleShapeLayer,
             let faceLandmarksShapeLayer = self.detectedFaceLandmarksShapeLayer
@@ -531,6 +532,7 @@ public class CameraPreviewView: MTKView {
         CATransaction.commit()
     }
     
+    @available(iOS 11.0, *)
     fileprivate func addPoints(in landmarkRegion: VNFaceLandmarkRegion2D, to path: CGMutablePath, applying affineTransform: CGAffineTransform, closingWhenComplete closePath: Bool) {
         let pointCount = landmarkRegion.pointCount
         if pointCount > 1 {
@@ -544,6 +546,7 @@ public class CameraPreviewView: MTKView {
         }
     }
     
+    @available(iOS 11.0, *)
     fileprivate func addIndicators(to faceRectanglePath: CGMutablePath, faceLandmarksPath: CGMutablePath, for faceObservation: VNFaceObservation) {
         let displaySize = self.captureDeviceResolution
         

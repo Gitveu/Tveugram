@@ -111,7 +111,9 @@ final class GiftStoreScreenComponent: Component {
             self.scrollView.scrollsToTop = false
             self.scrollView.delaysContentTouches = false
             self.scrollView.canCancelContentTouches = true
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             if #available(iOS 13.0, *) {
                 self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
             }

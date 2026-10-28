@@ -30,7 +30,7 @@ public final class PrivateCallVideoLayer: MetalEngineSubjectLayer, MetalEngineSu
         let computePipelineStateYUVTriPlanarToRGBA: MTLComputePipelineState
         let computePipelineStateHorizontal: MTLComputePipelineState
         let computePipelineStateVertical: MTLComputePipelineState
-        let downscaleKernel: MPSImageBilinearScale
+        let downscaleKernel: MPSUnaryImageKernel?
 
         var sharpeningStrength: Float = 0.0
         var sharpenKernel: MPSImageConvolution
@@ -69,7 +69,11 @@ public final class PrivateCallVideoLayer: MetalEngineSubjectLayer, MetalEngineSu
             }
             self.computePipelineStateVertical = computePipelineStateVertical
             
-            self.downscaleKernel = MPSImageBilinearScale(device: device)
+            if #available(iOS 11.0, *) {
+                self.downscaleKernel = MPSImageBilinearScale(device: device)
+            } else {
+                self.downscaleKernel = nil
+            }
 
             self.sharpeningStrength = 1.4
             self.sharpenKernel = makeSharpenKernel(device: device, sharpeningStrength: self.sharpeningStrength)
@@ -263,7 +267,9 @@ public final class PrivateCallVideoLayer: MetalEngineSubjectLayer, MetalEngineSu
                     return nil
                 }
                 
-                blurState.downscaleKernel.encode(commandBuffer: commandBuffer, sourceTexture: rgbaTexture, destinationTexture: downscaledTexture)
+                if #available(iOS 11.0, *), let downscaleKernel = blurState.downscaleKernel as? MPSImageBilinearScale {
+                    downscaleKernel.encode(commandBuffer: commandBuffer, sourceTexture: rgbaTexture, destinationTexture: downscaledTexture)
+                }
                 
                 do {
                     guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {

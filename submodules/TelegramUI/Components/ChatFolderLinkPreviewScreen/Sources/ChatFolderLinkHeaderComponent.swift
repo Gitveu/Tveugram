@@ -139,7 +139,9 @@ final class ChatFolderLinkHeaderComponent: Component {
             self.layer.addSublayer(self.separatorLayer)
             
             self.separatorLayer.cornerRadius = 2.0
-            self.separatorLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                self.separatorLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
         }
         
         required init?(coder: NSCoder) {

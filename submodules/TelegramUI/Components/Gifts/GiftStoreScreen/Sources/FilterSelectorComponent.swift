@@ -104,7 +104,9 @@ public final class FilterSelectorComponent: Component {
             self.scrollsToTop = false
             self.delaysContentTouches = false
             self.canCancelContentTouches = true
-            self.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.contentInsetAdjustmentBehavior = .never
+            }
             self.alwaysBounceVertical = false
             self.clipsToBounds = false
         }

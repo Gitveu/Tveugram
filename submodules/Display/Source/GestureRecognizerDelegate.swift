@@ -178,6 +178,7 @@ private final class WrappedScrollViewDelegate: NSObject, UIScrollViewDelegate, U
         target.scrollViewDidScroll?(toTop: scrollView)
     }
     
+    @available(iOS 11.0, *)
     func scrollViewDidChangeAdjustedContentInset(_ scrollView: UIScrollView) {
         guard let target = self.target else {
             return
@@ -192,6 +193,7 @@ private final class WrappedScrollViewDelegate: NSObject, UIScrollViewDelegate, U
         return target.accessibilityScrollStatus?(for: scrollView)
     }
     
+    @available(iOS 11.0, *)
     func accessibilityAttributedScrollStatus(for scrollView: UIScrollView) -> NSAttributedString? {
         guard let target = self.target else {
             return nil

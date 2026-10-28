@@ -233,7 +233,9 @@ final class SheetBackgroundComponent: Component {
                 backgroundView.layer.cornerRadius = cornerRadius
             }
             backgroundView.isUserInteractionEnabled = false
-            backgroundView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            if #available(iOS 11.0, *) {
+                backgroundView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+            }
             backgroundView.clipsToBounds = true
             backgroundView.layer.masksToBounds = true
         }

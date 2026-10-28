@@ -326,7 +326,9 @@ final class StoryItemSetViewListComponent: Component {
             self.scrollView.canCancelContentTouches = true
             self.scrollView.delaysContentTouches = false
             self.scrollView.showsVerticalScrollIndicator = true
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.alwaysBounceVertical = true
             self.scrollView.indicatorStyle = .white
             

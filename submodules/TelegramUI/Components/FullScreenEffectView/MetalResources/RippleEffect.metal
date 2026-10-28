@@ -97,17 +97,17 @@ vertex RasterizerData rippleVertex
     float translationZ = dot(camPosition, forwardVector);
     
     float4x4 viewTransform = float4x4(
-        rightVector.x, upVector.x, forwardVector.x, 0.0,
-        rightVector.y, upVector.y, forwardVector.y, 0.0,
-        rightVector.z, upVector.z, forwardVector.z, 0.0,
-        -translationX, -translationY, -translationZ, 1.0
+        float4(rightVector.x, upVector.x, forwardVector.x, 0.0),
+        float4(rightVector.y, upVector.y, forwardVector.y, 0.0),
+        float4(rightVector.z, upVector.z, forwardVector.z, 0.0),
+        float4(-translationX, -translationY, -translationZ, 1.0)
     );
     
     float4x4 projectionTransform = float4x4(
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, -1.0 / 500.0, 1.0
+        float4(1.0, 0.0, 0.0, 0.0),
+        float4(0.0, 1.0, 0.0, 0.0),
+        float4(0.0, 0.0, 1.0, 0.0),
+        float4(0.0, 0.0, -1.0 / 500.0, 1.0)
     );
     
     float4x4 mvp = projectionTransform * viewTransform;

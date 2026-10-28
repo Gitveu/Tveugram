@@ -85,11 +85,15 @@ final class VideoChatListInviteComponent: Component {
                     highlightBackgroundLayer.frame = highlightBackgroundFrame
                     highlightBackgroundLayer.opacity = 1.0
                     if component.hasNext {
-                        highlightBackgroundLayer.maskedCorners = []
+                        if #available(iOS 11.0, *) {
+                            highlightBackgroundLayer.maskedCorners = []
+                        }
                         highlightBackgroundLayer.masksToBounds = false
                         highlightBackgroundLayer.cornerRadius = 0.0
                     } else {
-                        highlightBackgroundLayer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+                        if #available(iOS 11.0, *) {
+                            highlightBackgroundLayer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+                        }
                         highlightBackgroundLayer.masksToBounds = true
                         highlightBackgroundLayer.cornerRadius = 10.0
                     }

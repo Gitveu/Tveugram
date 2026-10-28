@@ -5,7 +5,9 @@ public final class ListViewScroller: UIScrollView, UIGestureRecognizerDelegate {
         super.init(frame: frame)
         
         self.scrollsToTop = false
-        self.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 11.0, *) {
+            self.contentInsetAdjustmentBehavior = .never
+        }
     }
     
     required public init?(coder aDecoder: NSCoder) {

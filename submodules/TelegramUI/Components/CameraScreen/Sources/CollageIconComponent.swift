@@ -196,7 +196,9 @@ final class CollageIconCarouselComponent: Component {
         override init(frame: CGRect) {
             super.init(frame: frame)
                                  
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.scrollView.showsVerticalScrollIndicator = false
             self.scrollView.showsHorizontalScrollIndicator = false
             

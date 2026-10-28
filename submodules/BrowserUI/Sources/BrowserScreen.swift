@@ -571,7 +571,7 @@ public class BrowserScreen: ViewController, MinimizableController {
                         if let documentContent = content as? BrowserDocumentContent {
                             subject = .media(documentContent.file.abstract, nil)
                             isDocument = true
-                        } else if let documentContent = content as? BrowserPdfContent {
+                        } else if #available(iOS 11.0, *), let documentContent = content as? BrowserPdfContent {
                             subject = .media(documentContent.file.abstract, nil)
                             isDocument = true
                         } else {
@@ -861,7 +861,11 @@ public class BrowserScreen: ViewController, MinimizableController {
             case let .document(file, _):
                 browserContent = BrowserDocumentContent(context: self.context, presentationData: self.presentationData, file: file)
             case let .pdfDocument(file, _):
-                browserContent = BrowserPdfContent(context: self.context, presentationData: self.presentationData, file: file)
+                if #available(iOS 11.0, *) {
+                    browserContent = BrowserPdfContent(context: self.context, presentationData: self.presentationData, file: file)
+                } else {
+                    browserContent = BrowserDocumentContent(context: self.context, presentationData: self.presentationData, file: file)
+                }
             }
             browserContent.pushContent = { [weak self] content, additionalContent in
                 guard let self else {

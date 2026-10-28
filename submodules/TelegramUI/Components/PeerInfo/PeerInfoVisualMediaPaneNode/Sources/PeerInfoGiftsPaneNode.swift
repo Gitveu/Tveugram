@@ -190,7 +190,9 @@ public final class PeerInfoGiftsPaneNode: ASDisplayNode, PeerInfoPaneNode, UIScr
     public override func didLoad() {
         super.didLoad()
         
-        self.scrollNode.view.contentInsetAdjustmentBehavior = .never
+        if #available(iOS 11.0, *) {
+            self.scrollNode.view.contentInsetAdjustmentBehavior = .never
+        }
         self.scrollNode.view.delegate = self
         
         self.emptyResultsClippingView.clipsToBounds = true

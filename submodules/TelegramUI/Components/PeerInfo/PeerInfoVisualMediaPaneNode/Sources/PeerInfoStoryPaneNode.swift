@@ -3446,7 +3446,9 @@ public final class PeerInfoStoryPaneNode: ASDisplayNode, PeerInfoPaneNode, ASScr
                 mapNode.supernode?.insertSubnode(mapInfoNode, aboveSubnode: mapNode)
                 mapInfoNode.clipsToBounds = true
                 mapInfoNode.cornerRadius = 10.0
-                mapInfoNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+                if #available(iOS 11.0, *) {
+                    mapInfoNode.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+                }
             }
             mapInfoNode.backgroundColor = self.presentationData.theme.list.plainBackgroundColor
             

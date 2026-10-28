@@ -65,7 +65,9 @@ public final class NewSessionInfoContentComponent: Component {
             self.addSubview(self.scrollView)
             
             self.scrollView.delaysContentTouches = false
-            self.scrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.scrollView.contentInsetAdjustmentBehavior = .never
+            }
             if #available(iOS 13.0, *) {
                 self.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
             }

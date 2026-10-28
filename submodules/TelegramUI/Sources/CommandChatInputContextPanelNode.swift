@@ -306,7 +306,9 @@ final class CommandChatInputContextPanelNode: ChatInputContextPanelNode {
         
         self.listBackgroundView = UIView()
         self.listBackgroundView.backgroundColor = theme.list.plainBackgroundColor
-        self.listBackgroundView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        if #available(iOS 11.0, *) {
+            self.listBackgroundView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        }
         self.listBackgroundView.layer.cornerRadius = 10.0
         
         super.init(context: context, theme: theme, strings: strings, fontSize: fontSize, chatPresentationContext: chatPresentationContext)
