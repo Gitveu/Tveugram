@@ -24,6 +24,7 @@ import DeviceModel
 import LegacyMediaPickerUI
 import PassKit
 
+@available(iOS 11.0, *)
 private final class TonSchemeHandler: NSObject, WKURLSchemeHandler {
     private final class PendingTask {
         let sourceTask: any WKURLSchemeTask
@@ -235,7 +236,9 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
             if let data = context.currentAppConfiguration.with({ $0 }).data, let hostValue = data["ton_proxy_address"] as? String {
                 proxyServerHost = hostValue
             }
-            configuration.setURLSchemeHandler(TonSchemeHandler(proxyServerHost: proxyServerHost), forURLScheme: "tonsite")
+            if #available(iOS 11.0, *) {
+                configuration.setURLSchemeHandler(TonSchemeHandler(proxyServerHost: proxyServerHost), forURLScheme: "tonsite")
+            }
             configuration.allowsInlineMediaPlayback = true
             if #available(iOSApplicationExtension 10.0, iOS 10.0, *) {
                 configuration.mediaTypesRequiringUserActionForPlayback = []
@@ -1548,15 +1551,19 @@ final class BrowserWebContent: UIView, BrowserContent, WKNavigationDelegate, WKU
     }
     
     func makeContentSnapshotView() -> UIView? {
-        let configuration = WKSnapshotConfiguration()
-        configuration.rect = CGRect(origin: .zero, size: self.webView.frame.size)
+        if #available(iOS 11.0, *) {
+            let configuration = WKSnapshotConfiguration()
+            configuration.rect = CGRect(origin: .zero, size: self.webView.frame.size)
 
-        let imageView = UIImageView()
-        imageView.frame = CGRect(origin: .zero, size: self.webView.frame.size)
-        self.webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
-            imageView.image = image
-        })
-        return imageView
+            let imageView = UIImageView()
+            imageView.frame = CGRect(origin: .zero, size: self.webView.frame.size)
+            self.webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
+                imageView.image = image
+            })
+            return imageView
+        } else {
+            return self.webView.snapshotView(afterScreenUpdates: false)
+        }
     }
 }
 

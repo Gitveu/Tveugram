@@ -9,6 +9,16 @@ import SwiftSignalKit
 import TelegramCore
 import Postbox
 
+private extension CIImage {
+    func safeSamplingLinear() -> CIImage {
+        if #available(iOS 11.0, *) {
+            return self.samplingLinear()
+        } else {
+            return self
+        }
+    }
+}
+
 public func mediaEditorGenerateGradientImage(size: CGSize, colors: [UIColor]) -> UIImage? {
     UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
     if let context = UIGraphicsGetCurrentContext() {
@@ -191,7 +201,7 @@ final class MediaEditorComposer {
                 makeEditorImageFrameComposition(context: ciContext, inputImage: ciImage, drawingImage: self.drawingImage, maskImage: self.maskImage, dimensions: self.dimensions, values: self.values, entities: self.entities, time: timestamp, completion: { compositedImage in
                     if var compositedImage {
                         let scale = self.outputDimensions.width / compositedImage.extent.width
-                        compositedImage = compositedImage.samplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                        compositedImage = compositedImage.safeSamplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
                         
                         self.ciContext?.render(compositedImage, to: pixelBuffer)
                         completion(pixelBuffer)
@@ -245,7 +255,7 @@ public func makeEditorImageComposition(context: CIContext, postbox: Postbox, inp
         if var compositedImage {
             let outputDimensions = outputDimensions ?? dimensions
             let scale = outputDimensions.width / compositedImage.extent.width
-            compositedImage = compositedImage.samplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            compositedImage = compositedImage.safeSamplingLinear().transformed(by: CGAffineTransform(scaleX: scale, y: scale))
             
             if let cgImage = context.createCGImage(compositedImage, from: CGRect(origin: .zero, size: compositedImage.extent.size)) {
                 Queue.mainQueue().async {
@@ -266,10 +276,10 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
     
     var resultImage = CIImage(color: isClear ? .clear : .black).cropped(to: CGRect(origin: .zero, size: dimensions)).transformed(by: CGAffineTransform(translationX: -dimensions.width / 2.0, y: -dimensions.height / 2.0))
     
-    var mediaImage = inputImage.samplingLinear().transformed(by: CGAffineTransform(translationX: -inputImage.extent.midX, y: -inputImage.extent.midY))
+    var mediaImage = inputImage.safeSamplingLinear().transformed(by: CGAffineTransform(translationX: -inputImage.extent.midX, y: -inputImage.extent.midY))
     
     if values.isStory || values.isSticker || values.isAvatar || values.isCover {
-        resultImage = mediaImage.samplingLinear().composited(over: resultImage)
+        resultImage = mediaImage.safeSamplingLinear().composited(over: resultImage)
     } else {
         let initialScale = dimensions.width / mediaImage.extent.width
         var horizontalScale = initialScale
@@ -281,7 +291,7 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
     }
     
     if let drawingImage {
-        resultImage = drawingImage.samplingLinear().composited(over: resultImage)
+        resultImage = drawingImage.safeSamplingLinear().composited(over: resultImage)
     }
     
     let frameRate: Float = 30.0
@@ -352,7 +362,7 @@ private func makeEditorImageFrameComposition(context: CIContext, inputImage: CII
         }
         let index = i
         entity.image(for: time, frameRate: frameRate, context: context, completion: { image in
-            if var image = image?.samplingLinear() {
+            if var image = image?.safeSamplingLinear() {
                 let resetTransform = CGAffineTransform(translationX: -image.extent.width / 2.0, y: -image.extent.height / 2.0)
                 image = image.transformed(by: resetTransform)
                 

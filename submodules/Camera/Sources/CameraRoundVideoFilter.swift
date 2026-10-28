@@ -229,7 +229,11 @@ final class CameraRoundVideoFilter {
         @unknown default:
             sourceOrientation = additional ? .leftMirrored : .right
         }
-        sourceImage = sourceImage.oriented(sourceOrientation)
+        if #available(iOS 11.0, *) {
+            sourceImage = sourceImage.oriented(sourceOrientation)
+        } else {
+            sourceImage = sourceImage.oriented(forExifOrientation: Int32(sourceOrientation.rawValue))
+        }
         let scale = CGFloat(videoMessageDimensions.width) / min(sourceImage.extent.width, sourceImage.extent.height)
         
         if !self.simple {

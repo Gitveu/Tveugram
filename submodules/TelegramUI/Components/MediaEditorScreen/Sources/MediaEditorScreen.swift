@@ -2852,7 +2852,7 @@ let storyMaxCombinedVideoDuration: Double = storyMaxVideoDuration * Double(story
 
 let avatarMaxVideoDuration: Double = 10.0
 
-public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UIDropInteractionDelegate {
+public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen {
     public enum Mode {
         public enum StickerEditorMode {
             case generic
@@ -3154,7 +3154,9 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
             }
             
             self.previewScrollView = UIScrollView()
-            self.previewScrollView.contentInsetAdjustmentBehavior = .never
+            if #available(iOS 11.0, *) {
+                self.previewScrollView.contentInsetAdjustmentBehavior = .never
+            }
             self.previewScrollView.contentInset = .zero
             self.previewScrollView.showsHorizontalScrollIndicator = false
             self.previewScrollView.showsVerticalScrollIndicator = false
@@ -8435,20 +8437,20 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
 
         (self.displayNode as! Node).containerLayoutUpdated(layout: layout, transition: ComponentTransition(transition))
     }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
+}
+
+@available(iOS 11.0, *)
+extension MediaEditorScreenImpl: UIDropInteractionDelegate {
     public func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
         return session.hasItemsConforming(toTypeIdentifiers: [kUTTypeImage as String])
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidUpdate session: UIDropSession) -> UIDropProposal {
         let operation: UIDropOperation
         operation = .copy
         return UIDropProposal(operation: operation)
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         session.loadObjects(ofClass: UIImage.self) { [weak self] imageItems in
             guard let self else {
@@ -8461,11 +8463,9 @@ public final class MediaEditorScreenImpl: ViewController, MediaEditorScreen, UID
         }
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidExit session: UIDropSession) {
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidEnd session: UIDropSession) {
     }
 }

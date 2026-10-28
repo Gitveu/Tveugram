@@ -3274,13 +3274,12 @@ final class StoryItemSetContainerSendMessage {
                     }
                 )
                 tooltipScreen.tag = "no_auto_dismiss"
-                weak var tooltipScreenValue: UndoOverlayController? = tooltipScreen
                 self.currentTooltipUpdateTimer?.invalidate()
-                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak view] _ in
+                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak view, weak tooltipScreen] _ in
                     guard let self, let view, let component = view.component else {
                         return
                     }
-                    guard let tooltipScreenValue else {
+                    guard let tooltipScreen else {
                         self.currentTooltipUpdateTimer?.invalidate()
                         self.currentTooltipUpdateTimer = nil
                         return
@@ -3291,7 +3290,7 @@ final class StoryItemSetContainerSendMessage {
                     
                     let presentationData = component.context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
                     let text = component.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
-                    tooltipScreenValue.content = .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
+                    tooltipScreen.content = .actionSucceeded(title: component.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
                 })
                 
                 self.tooltipScreen?.dismiss(animated: true)

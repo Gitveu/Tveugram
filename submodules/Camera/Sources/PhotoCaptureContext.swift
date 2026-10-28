@@ -50,6 +50,43 @@ final class PhotoCaptureContext: NSObject, AVCapturePhotoCaptureDelegate {
         self.pipe.putNext(.began)
     }
     
+    private func processPixelBuffer(_ photoPixelBuffer: CVPixelBuffer) {
+        var photoFormatDescription: CMFormatDescription?
+        CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: photoPixelBuffer, formatDescriptionOut: &photoFormatDescription)
+        
+        var orientation: UIImage.Orientation = .right
+        if self.orientation == .landscapeLeft {
+            orientation = .down
+        } else if self.orientation == .landscapeRight {
+            orientation = .up
+        } else if self.orientation == .portraitUpsideDown {
+            orientation = .left
+        }
+        
+        let finalPixelBuffer = photoPixelBuffer
+        let renderedCIImage = CIImage(cvImageBuffer: finalPixelBuffer)
+        if let cgImage = self.ciContext.createCGImage(renderedCIImage, from: renderedCIImage.extent)  {
+            var image = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
+            if image.imageOrientation != .up {
+                UIGraphicsBeginImageContextWithOptions(image.size, true, image.scale)
+                if self.mirror, let context = UIGraphicsGetCurrentContext() {
+                    context.translateBy(x: image.size.width / 2.0, y: image.size.height / 2.0)
+                    context.scaleBy(x: -1.0, y: 1.0)
+                    context.translateBy(x: -image.size.width / 2.0, y: -image.size.height / 2.0)
+                }
+                image.draw(in: CGRect(origin: .zero, size: image.size))
+                if let currentImage = UIGraphicsGetImageFromCurrentImageContext() {
+                    image = currentImage
+                }
+                UIGraphicsEndImageContext()
+            }
+            self.pipe.putNext(.finished(image, nil, CACurrentMediaTime()))
+        } else {
+            self.pipe.putNext(.failed)
+        }
+    }
+    
+    @available(iOS 11.0, *)
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let _ = error {
             self.pipe.putNext(.failed)
@@ -58,40 +95,17 @@ final class PhotoCaptureContext: NSObject, AVCapturePhotoCaptureDelegate {
                 print("Error occurred while capturing photo: Missing pixel buffer (\(String(describing: error)))")
                 return
             }
-            
-            var photoFormatDescription: CMFormatDescription?
-            CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: photoPixelBuffer, formatDescriptionOut: &photoFormatDescription)
-            
-            var orientation: UIImage.Orientation = .right
-            if self.orientation == .landscapeLeft {
-                orientation = .down
-            } else if self.orientation == .landscapeRight {
-                orientation = .up
-            } else if self.orientation == .portraitUpsideDown {
-                orientation = .left
-            }
-            
-            let finalPixelBuffer = photoPixelBuffer
-            let renderedCIImage = CIImage(cvImageBuffer: finalPixelBuffer)
-            if let cgImage = self.ciContext.createCGImage(renderedCIImage, from: renderedCIImage.extent)  {
-                var image = UIImage(cgImage: cgImage, scale: 1.0, orientation: orientation)
-                if image.imageOrientation != .up {
-                    UIGraphicsBeginImageContextWithOptions(image.size, true, image.scale)
-                    if self.mirror, let context = UIGraphicsGetCurrentContext() {
-                        context.translateBy(x: image.size.width / 2.0, y: image.size.height / 2.0)
-                        context.scaleBy(x: -1.0, y: 1.0)
-                        context.translateBy(x: -image.size.width / 2.0, y: -image.size.height / 2.0)
-                    }
-                    image.draw(in: CGRect(origin: .zero, size: image.size))
-                    if let currentImage = UIGraphicsGetImageFromCurrentImageContext() {
-                        image = currentImage
-                    }
-                    UIGraphicsEndImageContext()
-                }
-                self.pipe.putNext(.finished(image, nil, CACurrentMediaTime()))
-            } else {
-                self.pipe.putNext(.failed)
-            }
+            self.processPixelBuffer(photoPixelBuffer)
+        }
+    }
+
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photoSampleBuffer: CMSampleBuffer?, previewPhoto previewPhotoSampleBuffer: CMSampleBuffer?, resolvedSettings: AVCaptureResolvedPhotoSettings, bracketSettings: AVCaptureBracketedStillImageSettings?, error: Error?) {
+        if let _ = error {
+            self.pipe.putNext(.failed)
+        } else if let sampleBuffer = photoSampleBuffer, let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+            self.processPixelBuffer(imageBuffer)
+        } else {
+            self.pipe.putNext(.failed)
         }
     }
     

@@ -15,7 +15,7 @@ public final class ReflectorBenchmark {
             self.averageDelay = averageDelay
         }
     }
-    @available(macOS 10.14, *)
+    @available(iOS 12.0, macOS 10.14, *)
     private final class Impl {
         let queue: Queue
         let address: String
@@ -407,18 +407,24 @@ public final class ReflectorBenchmark {
     }
     
     private static let sharedQueue = Queue(name: "ReflectorBenchmark")
-    private let impl: QueueLocalObject<Impl>
+    private let impl: Any?
     
     public init(address: String, port: Int) {
-        let queue = ReflectorBenchmark.sharedQueue
-        self.impl = QueueLocalObject(queue: queue, generate: {
-            return Impl(queue: queue, address: address, port: port)
-        })
+        if #available(iOS 12.0, macOS 10.14, *) {
+            let queue = ReflectorBenchmark.sharedQueue
+            self.impl = QueueLocalObject<Impl>(queue: queue, generate: {
+                return Impl(queue: queue, address: address, port: port)
+            })
+        } else {
+            self.impl = nil
+        }
     }
     
     public func start(completion: @escaping (Results) -> Void) {
-        self.impl.with { impl in
-            impl.start(completion: completion)
+        if #available(iOS 12.0, macOS 10.14, *), let impl = self.impl as? QueueLocalObject<Impl> {
+            impl.with { impl in
+                impl.start(completion: completion)
+            }
         }
     }
 }

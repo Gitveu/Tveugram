@@ -228,7 +228,7 @@ struct ScrolledToMessageId: Equatable {
     var allowedReplacementDirection: AllowedReplacementDirections
 }
 
-public final class ChatControllerImpl: TelegramBaseController, ChatController, GalleryHiddenMediaTarget, UIDropInteractionDelegate {    
+public final class ChatControllerImpl: TelegramBaseController, ChatController, GalleryHiddenMediaTarget {    
     var validLayout: ContainerViewLayout?
     
     public weak var parentController: ViewController?
@@ -8673,60 +8673,6 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
         self.present(actionSheet, in: .window(.root))
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
-    public func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
-        return session.hasItemsConforming(toTypeIdentifiers: [kUTTypeImage as String])
-    }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
-    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidUpdate session: UIDropSession) -> UIDropProposal {
-        if !canSendMessagesToChat(self.presentationInterfaceState) {
-            return UIDropProposal(operation: .cancel)
-        }
-        
-        //let dropLocation = session.location(in: self.chatDisplayNode.view)
-        self.chatDisplayNode.updateDropInteraction(isActive: true)
-        
-        let operation: UIDropOperation
-        operation = .copy
-        return UIDropProposal(operation: operation)
-    }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
-    public func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
-        session.loadObjects(ofClass: UIImage.self) { [weak self] imageItems in
-            guard let strongSelf = self, !imageItems.isEmpty else {
-                return
-            }
-            let images = imageItems as! [UIImage]
-            
-            strongSelf.chatDisplayNode.updateDropInteraction(isActive: false)
-            if images.count == 1, let image = images.first {
-                let maxSide = max(image.size.width, image.size.height)
-                if maxSide.isZero {
-                    return
-                }
-                let aspectRatio = min(image.size.width, image.size.height) / maxSide
-                if (imageHasTransparency(image) && aspectRatio > 0.2) {
-                    strongSelf.enqueueStickerImage(image, isMemoji: false)
-                    return
-                }
-            }
-            strongSelf.chatDisplayNode.updateDropInteraction(isActive: false)
-            strongSelf.displayPasteMenu(images.map { .image($0) })
-        }
-    }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
-    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidExit session: UIDropSession) {
-        self.chatDisplayNode.updateDropInteraction(isActive: false)
-    }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
-    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidEnd session: UIDropSession) {
-        self.chatDisplayNode.updateDropInteraction(isActive: false)
-    }
-    
     public func beginMessageSearch(_ query: String) {
         self.interfaceInteraction?.beginMessageSearch(.everything, query)
     }
@@ -9806,5 +9752,56 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
     
     public var contentContainerNode: ASDisplayNode {
         return self.chatDisplayNode.contentContainerNode
+    }
+}
+
+@available(iOS 11.0, *)
+extension ChatControllerImpl: UIDropInteractionDelegate {
+    public func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
+        return session.hasItemsConforming(toTypeIdentifiers: [kUTTypeImage as String])
+    }
+    
+    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidUpdate session: UIDropSession) -> UIDropProposal {
+        if !canSendMessagesToChat(self.presentationInterfaceState) {
+            return UIDropProposal(operation: .cancel)
+        }
+        
+        self.chatDisplayNode.updateDropInteraction(isActive: true)
+        
+        let operation: UIDropOperation
+        operation = .copy
+        return UIDropProposal(operation: operation)
+    }
+    
+    public func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
+        session.loadObjects(ofClass: UIImage.self) { [weak self] imageItems in
+            guard let strongSelf = self, !imageItems.isEmpty else {
+                return
+            }
+            let images = imageItems as! [UIImage]
+            
+            strongSelf.chatDisplayNode.updateDropInteraction(isActive: false)
+            if images.count == 1, let image = images.first {
+                let maxSide = max(image.size.width, image.size.height)
+                if maxSide.isZero {
+                    return
+                }
+                let aspectRatio = min(image.size.width, image.size.height) / maxSide
+                if (imageHasTransparency(image) && aspectRatio > 0.2) {
+                    strongSelf.enqueueStickerImage(image, isMemoji: false)
+                    return
+                }
+            }
+            strongSelf.chatDisplayNode.updateDropInteraction(isActive: false)
+            strongSelf.displayPasteMenu(images.map { .image($0) })
+        }
+    }
+    
+    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidExit session: UIDropSession) {
+        self.chatDisplayNode.updateDropInteraction(isActive: false)
+    }
+    
+    public func dropInteraction(_ interaction: UIDropInteraction, sessionDidEnd session: UIDropSession) {
+        self.chatDisplayNode.updateDropInteraction(isActive: false)
     }
 }

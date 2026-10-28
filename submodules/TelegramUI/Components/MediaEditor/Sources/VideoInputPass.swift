@@ -119,10 +119,13 @@ final class CIInputPass: RenderPass {
             return nil
         }
         
-        let transformedImage = ciImage.transformed(by: CGAffineTransformMakeScale(1.0, -1.0).translatedBy(x: 0.0, y: -ciImage.extent.height))
-        let renderDestination = CIRenderDestination(mtlTexture: outputTexture, commandBuffer: commandBuffer)
-        _ = try? context.startTask(toRender: transformedImage, to: renderDestination)
-        
-        return outputTexture
+        if #available(iOS 11.0, *) {
+            let transformedImage = ciImage.transformed(by: CGAffineTransformMakeScale(1.0, -1.0).translatedBy(x: 0.0, y: -ciImage.extent.height))
+            let renderDestination = CIRenderDestination(mtlTexture: outputTexture, commandBuffer: commandBuffer)
+            _ = try? context.startTask(toRender: transformedImage, to: renderDestination)
+            return outputTexture
+        } else {
+            return nil
+        }
     }
 }

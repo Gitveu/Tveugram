@@ -30,7 +30,7 @@ private enum InnerState: Equatable {
     case authorized
 }
 
-public final class AuthorizationSequenceController: NavigationController, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+public final class AuthorizationSequenceController: NavigationController {
     static func navigationBarTheme(_ theme: PresentationTheme) -> NavigationBarTheme {
         return NavigationBarTheme(buttonColor: theme.intro.accentTextColor, disabledButtonColor: theme.intro.disabledTextColor, primaryTextColor: theme.intro.primaryTextColor, backgroundColor: .clear, opaqueBackgroundColor: .clear, enableBackgroundBlur: false, separatorColor: .clear, badgeBackgroundColor: theme.rootController.navigationBar.badgeBackgroundColor, badgeStrokeColor: theme.rootController.navigationBar.badgeStrokeColor, badgeTextColor: theme.rootController.navigationBar.badgeTextColor)
     }
@@ -774,101 +774,6 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         return controller
     }
     
-    @available(iOS 13.0, *)
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        let lastController = self.viewControllers.last as? ViewController
-        
-        switch authorization.credential {
-            case let appleIdCredential as ASAuthorizationAppleIDCredential:
-                guard let tokenData = appleIdCredential.identityToken, let token = String(data: tokenData, encoding: .utf8) else {
-                    lastController?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-                    return
-                }
-            
-            if self.signInWithAppleSetup {
-                self.actionDisposable.set((verifyLoginEmailSetup(account: self.account, code: .appleToken(token))
-                |> deliverOnMainQueue).startStrict(error: { [weak self, weak lastController] error in
-                    if let strongSelf = self, let lastController = lastController {
-                        let text: String
-                        switch error {
-                            case .limitExceeded:
-                                text = strongSelf.presentationData.strings.Login_CodeFloodError
-                            case .generic, .codeExpired:
-                                text = strongSelf.presentationData.strings.Login_UnknownError
-                            case .invalidCode:
-                                text = strongSelf.presentationData.strings.Login_InvalidCodeError
-                            case .timeout:
-                                text = strongSelf.presentationData.strings.Login_NetworkError
-                            case .invalidEmailToken:
-                                text = strongSelf.presentationData.strings.Login_InvalidEmailTokenError
-                            case .emailNotAllowed:
-                                text = strongSelf.presentationData.strings.Login_EmailNotAllowedError
-                        }
-                        lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-                    }
-                }))
-            } else {
-                self.actionDisposable.set(
-                    authorizeWithCode(accountManager: self.sharedContext.accountManager, account: self.account, code: .emailVerification(.appleToken(token)), termsOfService: nil, forcedPasswordSetupNotice: { value in
-                        guard let entry = CodableEntry(ApplicationSpecificCounterNotice(value: value)) else {
-                            return nil
-                        }
-                        return (ApplicationSpecificNotice.forcedPasswordSetupKey(), entry)
-                    }).startStrict(next: { [weak self] result in
-                        guard let strongSelf = self else {
-                            return
-                        }
-                        switch result {
-                            case let .signUp(data):
-                                let _ = beginSignUp(account: strongSelf.account, data: data).startStandalone()
-                            case .loggedIn:
-                                break
-                        }
-                    }, error: { [weak self, weak lastController] error in
-                        Queue.mainQueue().async {
-                            if let strongSelf = self, let lastController = lastController {
-                                let text: String
-                                switch error {
-                                    case .limitExceeded:
-                                        text = strongSelf.presentationData.strings.Login_CodeFloodError
-                                    case .invalidCode:
-                                        text = strongSelf.presentationData.strings.Login_InvalidCodeError
-                                    case .generic:
-                                        text = strongSelf.presentationData.strings.Login_UnknownError
-                                    case .codeExpired:
-                                        text = strongSelf.presentationData.strings.Login_CodeExpired
-                                        let account = strongSelf.account
-                                        let _ = strongSelf.engine.auth.setState(state: UnauthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, contents: .empty)).startStandalone()
-                                    case .invalidEmailToken:
-                                        text = strongSelf.presentationData.strings.Login_InvalidEmailTokenError
-                                    case .invalidEmailAddress:
-                                        text = strongSelf.presentationData.strings.Login_InvalidEmailAddressError
-                                }
-                                
-                                lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-                            }
-                        }
-                    })
-                )
-            }
-            default:
-                break
-        }
-    }
-    
-    @available(iOS 13.0, *)
-    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        guard let lastController = self.viewControllers.last as? ViewController else {
-            return
-        }
-        lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: error.localizedDescription, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
-    }
-    
-    @available(iOS 13.0, *)
-    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return self.view.window!
-    }
-    
     private func passwordEntryController(hint: String, suggestReset: Bool, syncContacts: Bool) -> AuthorizationSequencePasswordEntryController {
         var currentController: AuthorizationSequencePasswordEntryController?
         for c in self.viewControllers {
@@ -1429,5 +1334,100 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
         } else {
             controller.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: presentationData), title: nil, text: presentationData.strings.Login_EmailNotConfiguredError, actions: [TextAlertAction(type: .defaultAction, title: presentationData.strings.Common_OK, action: {})]), in: .window(.root))
         }
+    }
+}
+
+@available(iOS 13.0, *)
+extension AuthorizationSequenceController: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        let lastController = self.viewControllers.last as? ViewController
+        
+        switch authorization.credential {
+            case let appleIdCredential as ASAuthorizationAppleIDCredential:
+                guard let tokenData = appleIdCredential.identityToken, let token = String(data: tokenData, encoding: .utf8) else {
+                    lastController?.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: self.presentationData.strings.Login_UnknownError, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    return
+                }
+            
+            if self.signInWithAppleSetup {
+                self.actionDisposable.set((verifyLoginEmailSetup(account: self.account, code: .appleToken(token))
+                |> deliverOnMainQueue).startStrict(error: { [weak self, weak lastController] error in
+                    if let strongSelf = self, let lastController = lastController {
+                        let text: String
+                        switch error {
+                            case .limitExceeded:
+                                text = strongSelf.presentationData.strings.Login_CodeFloodError
+                            case .generic, .codeExpired:
+                                text = strongSelf.presentationData.strings.Login_UnknownError
+                            case .invalidCode:
+                                text = strongSelf.presentationData.strings.Login_InvalidCodeError
+                            case .timeout:
+                                text = strongSelf.presentationData.strings.Login_NetworkError
+                            case .invalidEmailToken:
+                                text = strongSelf.presentationData.strings.Login_InvalidEmailTokenError
+                            case .emailNotAllowed:
+                                text = strongSelf.presentationData.strings.Login_EmailNotAllowedError
+                        }
+                        lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                    }
+                }))
+            } else {
+                self.actionDisposable.set(
+                    authorizeWithCode(accountManager: self.sharedContext.accountManager, account: self.account, code: .emailVerification(.appleToken(token)), termsOfService: nil, forcedPasswordSetupNotice: { value in
+                        guard let entry = CodableEntry(ApplicationSpecificCounterNotice(value: value)) else {
+                            return nil
+                        }
+                        return (ApplicationSpecificNotice.forcedPasswordSetupKey(), entry)
+                    }).startStrict(next: { [weak self] result in
+                        guard let strongSelf = self else {
+                            return
+                        }
+                        switch result {
+                            case let .signUp(data):
+                                let _ = beginSignUp(account: strongSelf.account, data: data).startStandalone()
+                            case .loggedIn:
+                                break
+                        }
+                    }, error: { [weak self, weak lastController] error in
+                        Queue.mainQueue().async {
+                            if let strongSelf = self, let lastController = lastController {
+                                let text: String
+                                switch error {
+                                    case .limitExceeded:
+                                        text = strongSelf.presentationData.strings.Login_CodeFloodError
+                                    case .invalidCode:
+                                        text = strongSelf.presentationData.strings.Login_InvalidCodeError
+                                    case .generic:
+                                        text = strongSelf.presentationData.strings.Login_UnknownError
+                                    case .codeExpired:
+                                        text = strongSelf.presentationData.strings.Login_CodeExpired
+                                        let account = strongSelf.account
+                                        let _ = strongSelf.engine.auth.setState(state: UnauthorizedAccountState(isTestingEnvironment: account.testingEnvironment, masterDatacenterId: account.masterDatacenterId, contents: .empty)).startStandalone()
+                                    case .invalidEmailToken:
+                                        text = strongSelf.presentationData.strings.Login_InvalidEmailTokenError
+                                    case .invalidEmailAddress:
+                                        text = strongSelf.presentationData.strings.Login_InvalidEmailAddressError
+                                }
+                                
+                                lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: strongSelf.presentationData), title: nil, text: text, actions: [TextAlertAction(type: .defaultAction, title: strongSelf.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+                            }
+                        }
+                    })
+                )
+            }
+            default:
+                break
+        }
+    }
+    
+    public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        guard let lastController = self.viewControllers.last as? ViewController else {
+            return
+        }
+        lastController.present(standardTextAlertController(theme: AlertControllerTheme(presentationData: self.presentationData), title: nil, text: error.localizedDescription, actions: [TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Common_OK, action: {})]), in: .window(.root))
+    }
+    
+    public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        return self.view.window!
     }
 }

@@ -36,7 +36,7 @@ private enum DrawingOperation {
     case removeEntity(DrawingEntity)
 }
 
-public final class DrawingView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate, TGPhotoDrawingView {
+public final class DrawingView: UIView, UIGestureRecognizerDelegate, TGPhotoDrawingView {
     public var zoomOut: () -> Void = {}
     
     public struct NavigationState {
@@ -136,7 +136,7 @@ public final class DrawingView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     
     private var previousPointTimestamp: Double?
     
-    private let pencilInteraction: UIInteraction?
+    private let pencilInteraction: AnyObject?
         
     public init(size: CGSize, gestureView: UIView? = nil) {
         self.imageSize = size
@@ -465,20 +465,6 @@ public final class DrawingView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
-    }
-    
-    @available(iOS 12.1, *)
-    public func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
-        switch UIPencilInteraction.preferredTapAction {
-        case .switchEraser:
-            self.requestedEraserToggle()
-        case .showColorPalette:
-            self.requestedColorPicker()
-        case .switchPrevious:
-            self.requestedToolsToggle()
-        default:
-            break
-        }
     }
         
     private var longPressTimer: SwiftSignalKit.Timer?
@@ -1098,6 +1084,22 @@ public final class DrawingView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     
     public var isTracking: Bool {
         return self.uncommitedElement != nil
+    }
+}
+
+@available(iOS 12.1, *)
+extension DrawingView: UIPencilInteractionDelegate {
+    public func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
+        switch UIPencilInteraction.preferredTapAction {
+        case .switchEraser:
+            self.requestedEraserToggle()
+        case .showColorPalette:
+            self.requestedColorPicker()
+        case .switchPrevious:
+            self.requestedToolsToggle()
+        default:
+            break
+        }
     }
 }
 

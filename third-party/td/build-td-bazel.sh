@@ -31,12 +31,24 @@ if [ "$ARCH" = "arm64" ]; then
   export CFLAGS="-arch arm64 -miphoneos-version-min=10.3"
   export CXXFLAGS="-arch arm64 -miphoneos-version-min=10.3"
   export LDFLAGS="-arch arm64 -miphoneos-version-min=10.3"
+  SYSTEM_PROCESSOR="aarch64"
+  OSX_ARCH="arm64"
 elif [ "$ARCH" = "sim_arm64" ]; then
   IOS_PLATFORMDIR="$(xcode-select -p)/Platforms/iPhoneSimulator.platform"
   IOS_SYSROOT=($IOS_PLATFORMDIR/Developer/SDKs/iPhoneSimulator*.sdk)
   export CFLAGS="-arch arm64 --target=arm64-apple-ios10.3-simulator -miphonesimulator-version-min=10.3"
   export CXXFLAGS="-arch arm64 --target=arm64-apple-ios10.3-simulator -miphonesimulator-version-min=10.3"
   export LDFLAGS="-arch arm64 --target=arm64-apple-ios10.3-simulator -miphonesimulator-version-min=10.3"
+  SYSTEM_PROCESSOR="aarch64"
+  OSX_ARCH="arm64"
+elif [ "$ARCH" = "x86_64" ]; then
+  IOS_PLATFORMDIR="$(xcode-select -p)/Platforms/iPhoneSimulator.platform"
+  IOS_SYSROOT=($IOS_PLATFORMDIR/Developer/SDKs/iPhoneSimulator*.sdk)
+  export CFLAGS="-arch x86_64 -miphonesimulator-version-min=10.3"
+  export CXXFLAGS="-arch x86_64 -miphonesimulator-version-min=10.3"
+  export LDFLAGS="-arch x86_64 -miphonesimulator-version-min=10.3"
+  SYSTEM_PROCESSOR="x86_64"
+  OSX_ARCH="x86_64"
 else
   echo "Unsupported architecture $ARCH"
   exit 1
@@ -48,8 +60,8 @@ cd build
 
 touch toolchain.cmake
 echo "set(CMAKE_SYSTEM_NAME Darwin)" >> toolchain.cmake
-echo "set(CMAKE_SYSTEM_PROCESSOR aarch64)" >> toolchain.cmake
-echo "set(CMAKE_OSX_ARCHITECTURES arm64)" >> toolchain.cmake
+echo "set(CMAKE_SYSTEM_PROCESSOR $SYSTEM_PROCESSOR)" >> toolchain.cmake
+echo "set(CMAKE_OSX_ARCHITECTURES $OSX_ARCH)" >> toolchain.cmake
 echo "set(CMAKE_OSX_DEPLOYMENT_TARGET 10.3)" >> toolchain.cmake
 echo "set(CMAKE_C_COMPILER $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang)" >> toolchain.cmake
 echo "set(CMAKE_CXX_COMPILER $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++)" >> toolchain.cmake

@@ -219,7 +219,7 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
     private let pickerAnnotationContainerView: PickerAnnotationContainerView
     private weak var userLocationAnnotationView: MKAnnotationView?
     private var headingArrowView: UIImageView?
-    private var compassView: MKCompassButton?
+    private var compassView: UIView?
     
     private weak var defaultUserLocationAnnotation: MKAnnotation?
     
@@ -325,10 +325,12 @@ public final class LocationMapNode: ASDisplayNode, MKMapViewDelegateTarget {
         let delegateImpl = MKMapViewDelegateImpl(target: self)
         self.delegateImpl = delegateImpl
         
-        let compassView = MKCompassButton(mapView: mapView)
-        compassView.isUserInteractionEnabled = true
-        self.compassView = compassView
-        mapView.addSubview(compassView)
+        if #available(iOS 11.0, *) {
+            let compassView = MKCompassButton(mapView: mapView)
+            compassView.isUserInteractionEnabled = true
+            self.compassView = compassView
+            mapView.addSubview(compassView)
+        }
         
         mapView.delegate = delegateImpl
         mapView.mapType = self.mapMode.mapType

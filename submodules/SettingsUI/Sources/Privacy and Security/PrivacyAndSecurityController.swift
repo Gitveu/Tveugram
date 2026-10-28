@@ -733,20 +733,20 @@ private func privacyAndSecurityControllerEntries(
     return entries
 }
 
-class PrivacyAndSecurityControllerImpl: ItemListController, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+class PrivacyAndSecurityControllerImpl: ItemListController {
     var authorizationCompletion: ((Any) -> Void)?
-    
-    @available(iOS 13.0, *)
+}
+
+@available(iOS 13.0, *)
+extension PrivacyAndSecurityControllerImpl: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         self.authorizationCompletion?(authorization.credential)
     }
     
-    @available(iOS 13.0, *)
     public func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         Logger.shared.log("AppleSignIn", "Failed with error: \(error.localizedDescription)")
     }
     
-    @available(iOS 13.0, *)
     public func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         return self.view.window!
     }

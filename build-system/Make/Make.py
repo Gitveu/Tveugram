@@ -91,8 +91,8 @@ class BazelCommandLine:
             # https://docs.bazel.build/versions/master/command-line-reference.html
             # Set the number of parallel jobs per module to saturate the available CPU resources.
             #'--swiftcopt=-j{}'.format(os.cpu_count() - 1),
-            '--@build_bazel_rules_swift//swift:copt="-j{}"'.format(os.cpu_count() - 1),
-            '--@build_bazel_rules_swift//swift:copt="-whole-module-optimization"',
+            '--@build_bazel_rules_swift//swift:copt=-j{}'.format(os.cpu_count() - 1),
+            '--@build_bazel_rules_swift//swift:copt=-whole-module-optimization',
         ]
 
         self.common_release_args = [
@@ -171,6 +171,17 @@ class BazelCommandLine:
                 # Always build universal Watch binaries.
                 '--watchos_cpus=arm64_32'
             ] + self.common_debug_args
+        elif configuration == 'debug_sim_x86_64':
+            self.configuration_args = [
+                # bazel debug build configuration
+                '-c', 'dbg',
+
+                # Build single-architecture binaries. It is almost 2 times faster is 32-bit support is not required.
+                '--ios_multi_cpus=x86_64',
+
+                # Always build universal Watch binaries.
+                '--watchos_cpus=arm64_32'
+            ] + self.common_debug_args
         elif configuration == 'release_sim_arm64':
             self.configuration_args = [
                 # bazel optimized build configuration
@@ -178,6 +189,17 @@ class BazelCommandLine:
 
                 # Build single-architecture binaries. It is almost 2 times faster is 32-bit support is not required.
                 '--ios_multi_cpus=sim_arm64',
+
+                # Always build universal Watch binaries.
+                '--watchos_cpus=arm64_32'
+            ] + self.common_debug_args
+        elif configuration == 'release_sim_x86_64':
+            self.configuration_args = [
+                # bazel optimized build configuration
+                '-c', 'opt',
+
+                # Build single-architecture binaries. It is almost 2 times faster is 32-bit support is not required.
+                '--ios_multi_cpus=x86_64',
 
                 # Always build universal Watch binaries.
                 '--watchos_cpus=arm64_32'
@@ -999,7 +1021,9 @@ if __name__ == '__main__':
             'debug_arm64',
             'debug_armv7',
             'debug_sim_arm64',
+            'debug_sim_x86_64',
             'release_sim_arm64',
+            'release_sim_x86_64',
             'release_arm64',
             'release_armv7',
             'release_universal'
@@ -1229,7 +1253,9 @@ if __name__ == '__main__':
             'debug_arm64',
             'debug_armv7',
             'debug_sim_arm64',
+            'debug_sim_x86_64',
             'release_sim_arm64',
+            'release_sim_x86_64',
             'release_arm64',
             'release_armv7',
             'release_universal'

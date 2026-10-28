@@ -117,9 +117,13 @@ final class StickerOutlineRenderPass: RenderPass {
             return input
         }
         
-        let renderDestination = CIRenderDestination(mtlTexture: outputTexture, commandBuffer: commandBuffer)
-        _ = try? context.startTask(toRender: resultImage, to: renderDestination)
-        return outputTexture
+        if #available(iOS 11.0, *) {
+            let renderDestination = CIRenderDestination(mtlTexture: outputTexture, commandBuffer: commandBuffer)
+            _ = try? context.startTask(toRender: resultImage, to: renderDestination)
+            return outputTexture
+        } else {
+            return input
+        }
     }
 }
 

@@ -37,13 +37,12 @@ extension ChatListControllerImpl {
                     }
                 )
                 tooltipScreen.tag = "no_auto_dismiss"
-                weak var tooltipScreenValue: UndoOverlayController? = tooltipScreen
                 self.currentTooltipUpdateTimer?.invalidate()
-                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self] _ in
+                self.currentTooltipUpdateTimer = Foundation.Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true, block: { [weak self, weak tooltipScreen] _ in
                     guard let self else {
                         return
                     }
-                    guard let tooltipScreenValue else {
+                    guard let tooltipScreen else {
                         self.currentTooltipUpdateTimer?.invalidate()
                         self.currentTooltipUpdateTimer = nil
                         return
@@ -54,7 +53,7 @@ extension ChatListControllerImpl {
                     
                     let presentationData = context.sharedContext.currentPresentationData.with { $0 }.withUpdated(theme: defaultDarkPresentationTheme)
                     let text = presentationData.strings.Story_ToastStealthModeActiveText(timeIntervalString(strings: presentationData.strings, value: remainingActiveSeconds)).string
-                    tooltipScreenValue.content = .actionSucceeded(title: presentationData.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
+                    tooltipScreen.content = .actionSucceeded(title: presentationData.strings.Story_ToastStealthModeActiveTitle, text: text, cancel: "", destructive: false)
                 })
                 
                 openStory({ storyController in

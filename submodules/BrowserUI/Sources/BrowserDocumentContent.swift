@@ -280,7 +280,9 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
         }
         
         self.webView.scrollView.scrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: -insets.left, bottom: 0.0, right: -insets.right)
-        self.webView.scrollView.horizontalScrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: -insets.left, bottom: 0.0, right: -insets.right)
+        if #available(iOS 11.1, *) {
+            self.webView.scrollView.horizontalScrollIndicatorInsets = UIEdgeInsets(top: 0.0, left: -insets.left, bottom: 0.0, right: -insets.right)
+        }
     }
     
     private func updateState(_ f: (BrowserContentState) -> BrowserContentState) {
@@ -421,15 +423,19 @@ final class BrowserDocumentContent: UIView, BrowserContent, WKNavigationDelegate
     }
     
     func makeContentSnapshotView() -> UIView? {
-        let configuration = WKSnapshotConfiguration()
-        configuration.rect = CGRect(origin: .zero, size: self.webView.frame.size)
+        if #available(iOS 11.0, *) {
+            let configuration = WKSnapshotConfiguration()
+            configuration.rect = CGRect(origin: .zero, size: self.webView.frame.size)
 
-        let imageView = UIImageView()
-        imageView.frame = CGRect(origin: .zero, size: self.webView.frame.size)
-        self.webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
-            imageView.image = image
-        })
-        return imageView
+            let imageView = UIImageView()
+            imageView.frame = CGRect(origin: .zero, size: self.webView.frame.size)
+            self.webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
+                imageView.image = image
+            })
+            return imageView
+        } else {
+            return self.webView.snapshotView(afterScreenUpdates: false)
+        }
     }
 }
 

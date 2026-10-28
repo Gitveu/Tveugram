@@ -151,8 +151,10 @@ final class StreamSheetComponent: CombinedComponent {
                 // In iOS 16 context.view does not inherit safeAreaInsets, quick fix:
                 let safeAreaTopInView = context.view.window.flatMap { $0.convert(CGPoint(x: 0, y: $0.safeAreaInsets.top), to: context.view).y } ?? 0
                 backgroundExtraOffset = context.component.isFullyExtended ? -safeAreaTopInView : 0
-            } else {
+            } else if #available(iOS 11.0, *) {
                 backgroundExtraOffset = context.component.isFullyExtended ? -context.view.safeAreaInsets.top : 0
+            } else {
+                backgroundExtraOffset = 0
             }
             
             let background = background.update(

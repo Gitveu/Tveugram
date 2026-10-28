@@ -98,7 +98,7 @@ final class CameraVideoLayer: MetalEngineSubjectLayer, MetalEngineSubject {
         let computePipelineStateYUVTriPlanarToRGBA: MTLComputePipelineState
         let computePipelineStateHorizontal: MTLComputePipelineState
         let computePipelineStateVertical: MTLComputePipelineState
-        let downscaleKernel: MPSImageBilinearScale
+        let downscaleKernel: Any?
         
         required init?(device: MTLDevice) {
             guard let library = metalLibrary(device: device) else {
@@ -134,7 +134,11 @@ final class CameraVideoLayer: MetalEngineSubjectLayer, MetalEngineSubject {
             }
             self.computePipelineStateVertical = computePipelineStateVertical
             
-            self.downscaleKernel = MPSImageBilinearScale(device: device)
+            if #available(iOS 11.0, *) {
+                self.downscaleKernel = MPSImageBilinearScale(device: device)
+            } else {
+                self.downscaleKernel = nil
+            }
         }
     }
     
@@ -256,7 +260,9 @@ final class CameraVideoLayer: MetalEngineSubjectLayer, MetalEngineSubject {
                 return nil
             }
             
-            blurState.downscaleKernel.encode(commandBuffer: commandBuffer, sourceTexture: rgbaTexture, destinationTexture: downscaledTexture)
+            if #available(iOS 11.0, *), let downscaleKernel = blurState.downscaleKernel as? MPSImageBilinearScale {
+                downscaleKernel.encode(commandBuffer: commandBuffer, sourceTexture: rgbaTexture, destinationTexture: downscaledTexture)
+            }
             
             do {
                 guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {

@@ -42,7 +42,7 @@ private extension PresentationGroupCallState {
 
 private enum CurrentImpl {
     case call(OngoingGroupCallContext)
-    case mediaStream(WrappedMediaStreamingContext)
+    case mediaStream(AnyObject)
     case externalMediaStream(DirectMediaStreamingContext)
 }
 
@@ -171,7 +171,11 @@ private extension CurrentImpl {
         case let .call(callContext):
             return callContext.video(endpointId: endpointId)
         case let .mediaStream(mediaStreamContext):
-            return mediaStreamContext.video()
+            if #available(iOS 12.0, *), let mediaStreamContext = mediaStreamContext as? WrappedMediaStreamingContext {
+                return mediaStreamContext.video()
+            } else {
+                return .never()
+            }
         case .externalMediaStream:
             return .never()
         }
@@ -2011,7 +2015,9 @@ public final class PresentationGroupCallImpl: PresentationGroupCall {
                                 self.currentConnectionMode = .rtc
                             case .broadcast:
                                 self.currentConnectionMode = .broadcast
-                                mediaStreamContext.setAudioStreamData(audioStreamData: OngoingGroupCallContext.AudioStreamData(engine: self.accountContext.engine, callId: callInfo.id, accessHash: callInfo.accessHash, isExternalStream: callInfo.isStream))
+                                if #available(iOS 12.0, *), let mediaStreamContext = mediaStreamContext as? WrappedMediaStreamingContext {
+                                    mediaStreamContext.setAudioStreamData(audioStreamData: OngoingGroupCallContext.AudioStreamData(engine: self.accountContext.engine, callId: callInfo.id, accessHash: callInfo.accessHash, isExternalStream: callInfo.isStream))
+                                }
                             }
                         case let .externalMediaStream(externalMediaStream):
                             switch joinCallResult.connectionMode {

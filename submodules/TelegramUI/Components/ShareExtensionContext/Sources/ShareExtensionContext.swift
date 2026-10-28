@@ -626,34 +626,60 @@ public class ShareRootControllerImpl {
                                         let fileIndex = index
                                         if attachment.hasItemConformingToTypeIdentifier(kUTTypeImage as String) {
                                             dispatchGroup.enter()
-                                            attachment.loadFileRepresentation(forTypeIdentifier: kUTTypeImage as String, completionHandler: { url, _ in
-                                                if let url, let imageData = try? Data(contentsOf: url) {
-                                                    let filePath = storiesPath + "/\(fileIndex).jpg"
-                                                    try? FileManager.default.removeItem(atPath: filePath)
-                                                    
-                                                    do {
-                                                        try imageData.write(to: URL(fileURLWithPath: filePath))
-                                                    } catch {
-                                                        print("Error: \(error)")
+                                            if #available(iOS 11.0, *) {
+                                                attachment.loadFileRepresentation(forTypeIdentifier: kUTTypeImage as String, completionHandler: { url, _ in
+                                                    if let url, let imageData = try? Data(contentsOf: url) {
+                                                        let filePath = storiesPath + "/\(fileIndex).jpg"
+                                                        try? FileManager.default.removeItem(atPath: filePath)
+                                                        
+                                                        do {
+                                                            try imageData.write(to: URL(fileURLWithPath: filePath))
+                                                        } catch {
+                                                            print("Error: \(error)")
+                                                        }
                                                     }
-                                                }
-                                                dispatchGroup.leave()
-                                            })
+                                                    dispatchGroup.leave()
+                                                })
+                                            } else {
+                                                attachment.loadItem(forTypeIdentifier: kUTTypeImage as String, options: nil, completionHandler: { item, _ in
+                                                    if let url = item as? URL, let imageData = try? Data(contentsOf: url) {
+                                                        let filePath = storiesPath + "/\(fileIndex).jpg"
+                                                        try? FileManager.default.removeItem(atPath: filePath)
+                                                        try? imageData.write(to: URL(fileURLWithPath: filePath))
+                                                    } else if let image = item as? UIImage, let imageData = image.jpegData(compressionQuality: 0.9) {
+                                                        let filePath = storiesPath + "/\(fileIndex).jpg"
+                                                        try? FileManager.default.removeItem(atPath: filePath)
+                                                        try? imageData.write(to: URL(fileURLWithPath: filePath))
+                                                    }
+                                                    dispatchGroup.leave()
+                                                })
+                                            }
                                         } else if attachment.hasItemConformingToTypeIdentifier(kUTTypeMovie as String) {
                                             dispatchGroup.enter()
-                                            attachment.loadFileRepresentation(forTypeIdentifier: kUTTypeMovie as String, completionHandler: { url, _ in
-                                                if let url {
-                                                    let filePath = storiesPath + "/\(fileIndex).mp4"
-                                                    try? FileManager.default.removeItem(atPath: filePath)
-                                                    
-                                                    do {
-                                                        try FileManager.default.copyItem(at: url, to: URL(fileURLWithPath: filePath))
-                                                    } catch {
-                                                        print("Error: \(error)")
+                                            if #available(iOS 11.0, *) {
+                                                attachment.loadFileRepresentation(forTypeIdentifier: kUTTypeMovie as String, completionHandler: { url, _ in
+                                                    if let url {
+                                                        let filePath = storiesPath + "/\(fileIndex).mp4"
+                                                        try? FileManager.default.removeItem(atPath: filePath)
+                                                        
+                                                        do {
+                                                            try FileManager.default.copyItem(at: url, to: URL(fileURLWithPath: filePath))
+                                                        } catch {
+                                                            print("Error: \(error)")
+                                                        }
                                                     }
-                                                }
-                                                dispatchGroup.leave()
-                                            })
+                                                    dispatchGroup.leave()
+                                                })
+                                            } else {
+                                                attachment.loadItem(forTypeIdentifier: kUTTypeMovie as String, options: nil, completionHandler: { item, _ in
+                                                    if let url = item as? URL {
+                                                        let filePath = storiesPath + "/\(fileIndex).mp4"
+                                                        try? FileManager.default.removeItem(atPath: filePath)
+                                                        try? FileManager.default.copyItem(at: url, to: URL(fileURLWithPath: filePath))
+                                                    }
+                                                    dispatchGroup.leave()
+                                                })
+                                            }
                                         }
                                         index += 1
                                     }

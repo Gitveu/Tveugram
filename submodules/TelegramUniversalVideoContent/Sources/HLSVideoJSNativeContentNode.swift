@@ -31,7 +31,7 @@ private func parseRange(from rangeString: String) -> Range<Int>? {
     return start ..< end
 }
 
-final class HLSJSServerSource: SharedHLSServer.Source {
+final class HLSJSServerSource: SharedHLSServerSource {
     let id: String
     let postbox: Postbox
     let userLocation: MediaResourceUserLocation

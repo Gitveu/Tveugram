@@ -2510,7 +2510,11 @@ public final class WebAppController: ViewController, AttachmentContainable {
                     }
                     var alpha: Double
                     if effectiveIsAbsolute {
-                        alpha = motionData.heading * .pi / 180.0
+                        if #available(iOS 11.0, *) {
+                            alpha = motionData.heading * .pi / 180.0
+                        } else {
+                            alpha = 0.0
+                        }
                         if alpha > .pi {
                             alpha -= 2.0 * .pi
                         } else if alpha < -.pi {
@@ -3782,15 +3786,19 @@ public final class WebAppController: ViewController, AttachmentContainable {
             return nil
         }
         
-        let configuration = WKSnapshotConfiguration()
-        configuration.rect = CGRect(origin: .zero, size: webView.frame.size)
+        if #available(iOS 11.0, *) {
+            let configuration = WKSnapshotConfiguration()
+            configuration.rect = CGRect(origin: .zero, size: webView.frame.size)
 
-        let imageView = UIImageView()
-        imageView.frame = CGRect(origin: .zero, size: webView.frame.size)
-        webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
-            imageView.image = image
-        })
-        return imageView
+            let imageView = UIImageView()
+            imageView.frame = CGRect(origin: .zero, size: webView.frame.size)
+            webView.takeSnapshot(with: configuration, completionHandler: { image, _ in
+                imageView.image = image
+            })
+            return imageView
+        } else {
+            return webView.snapshotView(afterScreenUpdates: false)
+        }
     }
 }
 

@@ -760,6 +760,9 @@ ios_framework(
     deps = [
         "//submodules/TelegramCore:TelegramCore",
     ],
+    linkopts = [
+        "-all_load",
+    ],
     visibility = [
         "//visibility:public",
     ]

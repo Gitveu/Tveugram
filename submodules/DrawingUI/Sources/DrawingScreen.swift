@@ -2144,7 +2144,7 @@ private final class DrawingScreenComponent: CombinedComponent {
     }
 }
 
-public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, UIDropInteractionDelegate {
+public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController {
     fileprivate final class Node: ViewControllerTracingNode {
         private weak var controller: DrawingScreen?
         private let context: AccountContext
@@ -2947,20 +2947,20 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
         self.orientation = orientation
         self.containerLayoutUpdated(layout, transition: animated ? .animated(duration: 0.3, curve: .easeInOut) : .immediate)
     }
-    
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
+}
+
+@available(iOS 11.0, *)
+extension DrawingScreen: UIDropInteractionDelegate {
     public func dropInteraction(_ interaction: UIDropInteraction, canHandle session: UIDropSession) -> Bool {
         return session.hasItemsConforming(toTypeIdentifiers: [kUTTypeImage as String])
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidUpdate session: UIDropSession) -> UIDropProposal {
         let operation: UIDropOperation
         operation = .copy
         return UIDropProposal(operation: operation)
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         session.loadObjects(ofClass: UIImage.self) { [weak self] imageItems in
             guard let strongSelf = self else {
@@ -2974,11 +2974,9 @@ public class DrawingScreen: ViewController, TGPhotoDrawingInterfaceController, U
         }
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidExit session: UIDropSession) {
     }
     
-    @available(iOSApplicationExtension 11.0, iOS 11.0, *)
     public func dropInteraction(_ interaction: UIDropInteraction, sessionDidEnd session: UIDropSession) {
     }
 }

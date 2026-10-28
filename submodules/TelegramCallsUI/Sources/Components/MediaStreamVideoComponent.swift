@@ -797,7 +797,9 @@ private final class CustomIntensityVisualEffectView: UIVisualEffectView {
         animator.startAnimation()
         animator.pauseAnimation()
         animator.fractionComplete = intensity
-        animator.pausesOnCompletion = true
+        if #available(iOS 11.0, *) {
+            animator.pausesOnCompletion = true
+        }
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -809,6 +811,7 @@ private final class CustomIntensityVisualEffectView: UIVisualEffectView {
     }
 }
 
+@available(iOS 12.0, *)
 private final class ProxyVideoView: UIView {
     private let call: PresentationGroupCallImpl
     private let id: Int64

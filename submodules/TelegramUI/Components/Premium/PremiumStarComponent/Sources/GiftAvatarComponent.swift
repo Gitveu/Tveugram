@@ -190,8 +190,10 @@ public final class GiftAvatarComponent: Component {
                 let particleColor = color
                 for name in starNames {
                     if let node = scene.rootNode.childNode(withName: name, recursively: false), let particleSystem = node.particleSystems?.first {
-                        particleSystem.particleIntensity = 1.0
-                        particleSystem.particleIntensityVariation = 0.05
+                        if #available(iOS 11.0, *) {
+                            particleSystem.particleIntensity = 1.0
+                            particleSystem.particleIntensityVariation = 0.05
+                        }
                         particleSystem.particleColor = particleColor
                         particleSystem.particleColorVariation = SCNVector4Make(0.07, 0.0, 0.1, 0.0)
                         node.isHidden = false
@@ -215,8 +217,10 @@ public final class GiftAvatarComponent: Component {
                 
                 for name in names {
                     if let node = scene.rootNode.childNode(withName: name, recursively: false), let particleSystem = node.particleSystems?.first {
-                        particleSystem.particleIntensity = min(1.0, 2.0 * particleSystem.particleIntensity)
-                        particleSystem.particleIntensityVariation = 0.05
+                        if #available(iOS 11.0, *) {
+                            particleSystem.particleIntensity = min(1.0, 2.0 * particleSystem.particleIntensity)
+                            particleSystem.particleIntensityVariation = 0.05
+                        }
                         particleSystem.particleColor = particleColor
                         particleSystem.particleColorVariation = SCNVector4Make(0.1, 0.0, 0.12, 0.0)
                        

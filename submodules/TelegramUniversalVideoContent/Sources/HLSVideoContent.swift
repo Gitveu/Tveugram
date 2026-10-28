@@ -278,7 +278,7 @@ public final class HLSVideoContent: UniversalVideoContent {
     }
 }
 
-final class HLSServerSource: SharedHLSServer.Source {
+final class HLSServerSource: SharedHLSServerSource {
     let id: String
     let postbox: Postbox
     let userLocation: MediaResourceUserLocation

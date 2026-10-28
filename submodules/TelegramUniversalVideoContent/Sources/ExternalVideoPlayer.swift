@@ -5,7 +5,7 @@ import UniversalMediaPlayer
 import AccountContext
 import AVKit
 
-public class ExternalVideoPlayer: NSObject, AVRoutePickerViewDelegate {
+public class ExternalVideoPlayer: NSObject {
     private let context: AccountContext
     let content: NativeVideoContent
     
@@ -91,13 +91,6 @@ public class ExternalVideoPlayer: NSObject, AVRoutePickerViewDelegate {
         }
     }
     
-    @available(iOS 11.0, *)
-    public func routePickerViewDidEndPresentingRoutes(_ routePickerView: AVRoutePickerView) {
-        routePickerView.removeFromSuperview()
-        
-        self.play()
-    }
-    
     private var observerContextAirplay = 1
     
     func startObservingForAirPlayStatusChanges()
@@ -117,5 +110,13 @@ public class ExternalVideoPlayer: NSObject, AVRoutePickerViewDelegate {
         else {
             super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
+    }
+}
+
+@available(iOS 11.0, *)
+extension ExternalVideoPlayer: AVRoutePickerViewDelegate {
+    public func routePickerViewDidEndPresentingRoutes(_ routePickerView: AVRoutePickerView) {
+        routePickerView.removeFromSuperview()
+        self.play()
     }
 }

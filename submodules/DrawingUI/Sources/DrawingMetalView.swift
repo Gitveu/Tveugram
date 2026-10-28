@@ -643,7 +643,12 @@ final class Texture {
     
     init?(device: MTLDevice, width: Int, height: Int) {
         let bytesPerPixel = 4
-        let pixelRowAlignment = device.minimumLinearTextureAlignment(for: .bgra8Unorm)
+        let pixelRowAlignment: Int
+        if #available(iOS 11.0, *) {
+            pixelRowAlignment = device.minimumLinearTextureAlignment(for: .bgra8Unorm)
+        } else {
+            pixelRowAlignment = 64
+        }
         let bytesPerRow = alignUp(size: width * bytesPerPixel, align: pixelRowAlignment)
         
         self.width = width

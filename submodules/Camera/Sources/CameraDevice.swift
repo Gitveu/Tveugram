@@ -332,7 +332,13 @@ final class CameraDevice {
             return
         }
         self.transaction(device) { device in
-            device.videoZoomFactor = neutral ? device.neutralZoomFactor : device.minAvailableVideoZoomFactor
+            let minZoom: CGFloat
+            if #available(iOS 11.0, *) {
+                minZoom = device.minAvailableVideoZoomFactor
+            } else {
+                minZoom = 1.0
+            }
+            device.videoZoomFactor = neutral ? device.neutralZoomFactor : minZoom
         }
     }
 }

@@ -7,8 +7,11 @@ import Postbox
 import VideoToolbox
 
 public let internal_isHardwareAv1Supported: Bool = {
-    let value = VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)
-    return value
+    if #available(iOS 11.0, *) {
+        return VTIsHardwareDecodeSupported(kCMVideoCodecType_AV1)
+    } else {
+        return false
+    }
 }()
 
 protocol ChunkMediaPlayerSourceImpl: AnyObject {
@@ -170,9 +173,19 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
     private let onSeeked: (() -> Void)?
     private weak var playerNode: MediaPlayerNode?
     
-    private let renderSynchronizer: AVSampleBufferRenderSynchronizer
+    private let renderSynchronizer: AnyObject
     private var videoRenderer: AVSampleBufferDisplayLayer
-    private var audioRenderer: AVSampleBufferAudioRenderer?
+    private var audioRenderer: AnyObject?
+    
+    @available(iOS 11.0, *)
+    private var synchronizer: AVSampleBufferRenderSynchronizer {
+        return self.renderSynchronizer as! AVSampleBufferRenderSynchronizer
+    }
+    
+    @available(iOS 11.0, *)
+    private var typedAudioRenderer: AVSampleBufferAudioRenderer? {
+        return self.audioRenderer as? AVSampleBufferAudioRenderer
+    }
     
     private var didNotifySentVideoFrames: Bool = false
     
@@ -260,8 +273,13 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         self.isAmbientMode = ambient
         self.baseRate = baseRate
         
-        self.renderSynchronizer = AVSampleBufferRenderSynchronizer()
-        self.renderSynchronizer.setRate(0.0, time: CMTime(seconds: 0.0, preferredTimescale: 44000))
+        if #available(iOS 11.0, *) {
+            let synchronizer = AVSampleBufferRenderSynchronizer()
+            self.renderSynchronizer = synchronizer
+            synchronizer.setRate(0.0, time: CMTime(seconds: 0.0, preferredTimescale: 44000))
+        } else {
+            self.renderSynchronizer = NSObject()
+        }
         
         if playerNode.videoLayer == nil {
             assertionFailure()
@@ -292,9 +310,9 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         })
         
         if #available(iOS 17.0, *) {
-            self.renderSynchronizer.addRenderer(self.videoRenderer.sampleBufferRenderer)
-        } else {
-            self.renderSynchronizer.addRenderer(self.videoRenderer)
+            self.synchronizer.addRenderer(self.videoRenderer.sampleBufferRenderer)
+        } else if #available(iOS 11.0, *) {
+            self.synchronizer.addRenderer(self.videoRenderer)
         }
     }
     
@@ -366,18 +384,18 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         }
         
         if self.isSoundEnabled && self.hasSound && self.hasAudioSession {
-            if self.audioRenderer == nil {
+            if self.audioRenderer == nil, #available(iOS 11.0, *) {
                 let audioRenderer = AVSampleBufferAudioRenderer()
                 audioRenderer.isMuted = self.isMuted
                 self.audioRenderer = audioRenderer
-                self.renderSynchronizer.addRenderer(audioRenderer)
+                self.synchronizer.addRenderer(audioRenderer)
             }
         } else {
-            if let audioRenderer = self.audioRenderer {
+            if #available(iOS 11.0, *), let audioRenderer = self.typedAudioRenderer {
                 self.audioRenderer = nil
                 audioRenderer.stopRequestingMediaData()
                 self.audioIsRequestingMediaData = false
-                self.renderSynchronizer.removeRenderer(audioRenderer, at: .invalid)
+                self.synchronizer.removeRenderer(audioRenderer, at: .invalid)
             }
         }
         
@@ -390,8 +408,10 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         let timestamp: CMTime
         if let pendingSeekTimestamp = self.pendingSeekTimestamp {
             timestamp = CMTimeMakeWithSeconds(pendingSeekTimestamp, preferredTimescale: 44000)
+        } else if #available(iOS 12.0, *) {
+            timestamp = self.synchronizer.currentTime()
         } else {
-            timestamp = self.renderSynchronizer.currentTime()
+            timestamp = CMTime.zero
         }
         let timestampSeconds = timestamp.seconds
         
@@ -469,7 +489,9 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
             if validParts.isEmpty, let pendingContinuePlaybackAfterSeekToTimestamp = self.pendingContinuePlaybackAfterSeekToTimestamp {
                 for part in partsStateParts {
                     if pendingContinuePlaybackAfterSeekToTimestamp >= part.startTime - 0.2 && pendingContinuePlaybackAfterSeekToTimestamp < part.endTime {
-                        self.renderSynchronizer.setRate(Float(self.renderSynchronizerRate), time: CMTimeMakeWithSeconds(part.startTime, preferredTimescale: 44000))
+                        if #available(iOS 11.0, *) {
+                            self.synchronizer.setRate(Float(self.renderSynchronizerRate), time: CMTimeMakeWithSeconds(part.startTime, preferredTimescale: 44000))
+                        }
                         break
                     }
                 }
@@ -698,7 +720,9 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         
         if self.renderSynchronizerRate != effectiveRate {
             self.renderSynchronizerRate = effectiveRate
-            self.renderSynchronizer.setRate(Float(effectiveRate), time: timestamp)
+            if #available(iOS 11.0, *) {
+                self.synchronizer.setRate(Float(effectiveRate), time: timestamp)
+            }
         }
         
         if effectiveRate != 0.0 {
@@ -792,7 +816,7 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
     public func setSoundMuted(soundMuted: Bool) {
         if self.isMuted != soundMuted {
             self.isMuted = soundMuted
-            if let audioRenderer = self.audioRenderer {
+            if #available(iOS 11.0, *), let audioRenderer = self.typedAudioRenderer {
                 audioRenderer.isMuted = self.isMuted
             }
         }
@@ -810,8 +834,10 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
             let currentTimestamp: CMTime
             if let pendingSeekTimestamp = self.pendingSeekTimestamp {
                 currentTimestamp = CMTimeMakeWithSeconds(pendingSeekTimestamp, preferredTimescale: 44000)
+            } else if #available(iOS 12.0, *) {
+                currentTimestamp = self.synchronizer.currentTime()
             } else {
-                currentTimestamp = self.renderSynchronizer.currentTime()
+                currentTimestamp = CMTime.zero
             }
             self.seek(timestamp: currentTimestamp.seconds, play: nil)
         }
@@ -863,8 +889,10 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         let currentTimestamp: CMTime
         if let pendingSeekTimestamp = self.pendingSeekTimestamp {
             currentTimestamp = CMTimeMakeWithSeconds(pendingSeekTimestamp, preferredTimescale: 44000)
+        } else if #available(iOS 12.0, *) {
+            currentTimestamp = self.synchronizer.currentTime()
         } else {
-            currentTimestamp = self.renderSynchronizer.currentTime()
+            currentTimestamp = CMTime.zero
         }
         let currentTimestampSeconds = currentTimestamp.seconds
         if currentTimestampSeconds == timestamp {
@@ -896,7 +924,9 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         
         //print("Seek to \(timestamp)")
         self.renderSynchronizerRate = 0.0
-        self.renderSynchronizer.setRate(0.0, time: CMTimeMakeWithSeconds(timestamp, preferredTimescale: 44000))
+        if #available(iOS 11.0, *) {
+            self.synchronizer.setRate(0.0, time: CMTimeMakeWithSeconds(timestamp, preferredTimescale: 44000))
+        }
         
         self.updateInternalState()
         
@@ -906,7 +936,7 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         } else {
             self.videoRenderer.stopRequestingMediaData()
         }
-        if let audioRenderer = self.audioRenderer {
+        if #available(iOS 11.0, *), let audioRenderer = self.typedAudioRenderer {
             self.audioIsRequestingMediaData = false
             audioRenderer.stopRequestingMediaData()
         }
@@ -931,7 +961,7 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
                     } else {
                         self.videoRenderer.flush()
                     }
-                    if let audioRenderer = self.audioRenderer {
+                    if #available(iOS 11.0, *), let audioRenderer = self.typedAudioRenderer {
                         audioRenderer.flush()
                     }
                     
@@ -949,6 +979,9 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
     }
     
     private func triggerRequestMediaData() {
+        guard #available(iOS 11.0, *) else {
+            return
+        }
         let loadedPartsMediaData = self.loadedPartsMediaData
         
         if !self.videoIsRequestingMediaData {
@@ -994,7 +1027,7 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
             })
         }
         
-        if !self.audioIsRequestingMediaData, let audioRenderer = self.audioRenderer {
+        if !self.audioIsRequestingMediaData, let audioRenderer = self.typedAudioRenderer {
             self.audioIsRequestingMediaData = true
             let loadedPartsMediaData = self.loadedPartsMediaData
             let audioTarget = audioRenderer
@@ -1016,6 +1049,7 @@ public final class ChunkMediaPlayerV2: ChunkMediaPlayer {
         }
     }
     
+    @available(iOS 11.0, *)
     private static func fillRendererBuffer(bufferTarget: AVQueuedSampleBufferRendering, loadedPartsMediaData: LoadedPartsMediaData, isVideo: Bool) -> (bufferIsReadyForMoreData: Bool, didEnqueue: Bool) {
         var bufferIsReadyForMoreData = true
         var didEnqueue = false

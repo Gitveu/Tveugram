@@ -342,8 +342,10 @@ public final class MediaStreamComponent: CombinedComponent {
             let safeAreaTopInView: CGFloat
             if #available(iOS 16.0, *) {
                 safeAreaTopInView = context.view.window.flatMap { $0.convert(CGPoint(x: 0, y: $0.safeAreaInsets.top), to: context.view).y } ?? 0
-            } else {
+            } else if #available(iOS 11.0, *) {
                 safeAreaTopInView = context.view.safeAreaInsets.top
+            } else {
+                safeAreaTopInView = 0.0
             }
             
             let isFullyDragged = context.availableSize.height - requiredSheetHeight + state.dismissOffset - safeAreaTopInView < 30.0
