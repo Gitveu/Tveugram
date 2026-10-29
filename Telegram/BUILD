@@ -1726,8 +1726,9 @@ ios_application(
             ":NotificationContentExtension",
             ":NotificationServiceExtension" + notificationServiceExtensionVersion,
             ":IntentsExtension",
-            ":WidgetExtension",
-            ":BroadcastUploadExtension",
+            # WidgetExtension (com.apple.widgetkit-extension, iOS 14+) and
+            # BroadcastUploadExtension (com.apple.broadcast-services-upload, iOS 11+)
+            # are excluded because their extension points are unknown to installd on iOS 10.3.3.
         ],
     }),
     deps = [
