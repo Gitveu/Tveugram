@@ -38,3 +38,17 @@
   4. `PDFKit` в `BrowserUI` — класс `BrowserPdfContent` помечен `@available(iOS 11.0, *)`, в `BrowserScreen` добавлен fallback на `BrowserDocumentContent` на iOS 10.
   5. `Vision` / `CoreML` — методы и импорты изолированы под `#available`, неиспользуемые импорты удалены.
 - **Статус:** Собрано, на устройстве не проверено (P0).
+
+---
+
+## 4. Ошибка установки: неизвестные точки расширений в installd (P0)
+- **Симптом:** При установке IPA на iOS 10.3.3 системный демон `installd` падает с ошибкой:
+  `Appex bundle at .../BroadcastUploadExtension.appex ... specifies a value (com.apple.broadcast-services-upload) for the NSExtensionPointIdentifier key in its Info.plist NSExtension dictionary that does not correspond to a known extension point.`
+- **Причина:**
+  1. `BroadcastUploadExtension` использует `com.apple.broadcast-services-upload` (ReplayKit broadcast upload, iOS 11+).
+  2. `WidgetExtension` использует `com.apple.widgetkit-extension` (WidgetKit, iOS 14+).
+  Демон `installd` в iOS 10.3.3 валидирует все `.appex` в папке `PlugIns/` приложения по своей таблице известных точек расширения; если идентификатор неизвестен ОС, установка приложения аварийно прерывается.
+- **Устранение:**
+  - В `Telegram/BUILD` исключены `:BroadcastUploadExtension` и `:WidgetExtension` из таргета `extensions`.
+  - Сохранены нативные расширения, полностью поддерживаемые в iOS 10: `:ShareExtension` (`com.apple.share-services`), `:NotificationContentExtension` (`com.apple.usernotifications.content-extension`), `:NotificationServiceExtension` (`com.apple.usernotifications.service`) и `:IntentsExtension` (`com.apple.intents-service`).
+- **Статус:** Исправлено в коммите `d8cdb20c33`. Собрано в новом IPA, на физическом устройстве ожидает проверки.
