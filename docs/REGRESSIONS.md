@@ -82,4 +82,16 @@
   1. Создан модуль обратной совместимости `submodules/LegacyCppCompat` (`LegacyCppCompat.mm`), содержащий реализации виртуального деструктора и методов `what()` для `std::bad_optional_access`, `std::bad_variant_access` и `std::bad_any_cast`.
   2. Модуль подключён в `deps` к `TelegramUIFramework`, `TelegramCoreFramework` и целевому приложению `Telegram` с флагом `alwayslink = True`.
   3. Проверено через `nm -m`: символы теперь экспортируются внутри самого бандла приложения (`__TEXT,__text` в `TelegramCoreFramework`), и загрузчик dyld больше не требует их наличия в `/usr/lib/libc++.1.dylib`.
-- **Статус:** Исправлено, пересобрано, готово к проверке.
+- **Статус:** Исправлено в коммите `739ca51f02`. Проверено: загрузчик dyld успешно связывает все символы и запускает процесс.
+
+---
+
+## 7. Падение в UI: -[UIScrollView setContentInsetAdjustmentBehavior:]: unrecognized selector (P0)
+- **Симптом:** При открытии приложения на iPhone 5s процесс стартует, работает около 3 секунд и падает с `NSInvalidArgumentException`:
+  `*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '-[UIScrollView setContentInsetAdjustmentBehavior:]: unrecognized selector sent to instance ...'`
+- **Причина:**
+  Свойство `UIScrollView.contentInsetAdjustmentBehavior` появилось в iOS 11.0. При показе экрана первого запуска `RMIntroViewController` вызывал сеттер напрямую без гварда доступности.
+- **Устранение:**
+  1. В `RMIntroViewController.m:356` вызов обёрнут в `@available(iOS 11.0, *)`.
+  2. В `submodules/LegacyCppCompat.mm` добавлен конструктор времени загрузки, динамически регистрирующий методы `setContentInsetAdjustmentBehavior:`, `contentInsetAdjustmentBehavior` и `UIView.safeAreaInsets` через `class_addMethod`, если они отсутствуют в системе (на iOS 10). На iOS 11+ системные методы остаются нетронутыми.
+- **Статус:** Исправлено в коммите `241661858c`, отправлено на iPhone по USB.
