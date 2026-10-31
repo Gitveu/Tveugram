@@ -95,3 +95,30 @@
   1. В `RMIntroViewController.m:356` вызов обёрнут в `@available(iOS 11.0, *)`.
   2. В `submodules/LegacyCppCompat.mm` добавлен конструктор времени загрузки, динамически регистрирующий методы `setContentInsetAdjustmentBehavior:`, `contentInsetAdjustmentBehavior` и `UIView.safeAreaInsets` через `class_addMethod`, если они отсутствуют в системе (на iOS 10). На iOS 11+ системные методы остаются нетронутыми.
 - **Статус:** Исправлено в коммите `241661858c`, отправлено на iPhone по USB.
+
+---
+
+## 8. Падение при вводе номера: -[NSURLSessionConfiguration setWaitsForConnectivity:] (P0)
+- **Симптом:** При вводе номера телефона и нажатии «Далее» приложение аварийно завершалось:
+  `*** Terminating app due to uncaught exception 'NSInvalidArgumentException', reason: '-[__NSCFURLSessionConfiguration setWaitsForConnectivity:]: unrecognized selector sent to instance ...'`
+- **Причина:**
+  Свойство `NSURLSessionConfiguration.waitsForConnectivity` появилось в iOS 11.0. При отправке сетевого запроса авторизации модуль `tdnet` (`third-party/td/td/tdnet/td/net/DarwinHttp.mm`) конфигурировал `NSURLSession` с вызовом `configuration.waitsForConnectivity = true` без проверки доступности ОС.
+- **Устранение:**
+  1. В `DarwinHttp.mm` вызовы `waitsForConnectivity` и `networkServiceType = NSURLNetworkServiceTypeResponsiveData` обёрнуты в `@available(iOS 11.0, *)` и `@available(iOS 13.0, *)`.
+  2. В `LegacyCppCompat.mm` добавлен глобальный runtime-фолбэк для `setWaitsForConnectivity:`, `waitsForConnectivity`, `setMultipathServiceType:`, `multipathServiceType` на классах `NSURLSessionConfiguration` и закрытом системном классе `__NSCFURLSessionConfiguration`, что предотвращает вылет даже при вызовах из закрытых бинарных фреймворков (например, RecaptchaEnterprise).
+- **Статус:** Исправлено в коммите `d59ef37035`, IPA собран и загружен на устройство по USB.
+
+---
+
+## 9. Пустой экран выбора кода страны (P1)
+- **Симптом:** При открытии экрана выбора страны таблица отображалась пустой (только разделители/белое поле и открытая клавиатура), страны и телефонные коды отсутствовали.
+- **Причина:**
+  В `CountrySelectionUI`:
+  1. На чистой установке `engine.localization.getCountriesList` возвращает пустой список (`[]`) из локального кэша sharedData до завершения сетевого ответа. Метод `loadServerCountryCodes` безусловно присваивал `countryCodes = countries`, затирая встроенную локальную базу `PhoneCountries.txt` пустым массивом.
+  2. В `loadCountryCodes()` парсер ожидал только `\r\n` разделители строк. При расхождениях форматов строк парсинг мог завершаться досрочно.
+- **Устранение:**
+  1. В `AuthorizationSequenceCountrySelectionController.swift` запрещено перезаписывать `countryCodes` пустым списком (`if !countries.isEmpty`).
+  2. Добавлен автоматический откат к чтению `PhoneCountries.txt`, если список стран пуст.
+  3. В парсерах `PhoneCountries.txt` поддержана обработка как `\r\n`, так и `\n`.
+  4. В `AuthorizationSequenceCountrySelectionControllerNode.swift` добавлен вызов `reloadData()` при инициализации и скорректирован нижний инсет таблицы с учётом высоты клавиатуры `layout.inputHeight`.
+- **Статус:** Исправлено в коммите `d59ef37035`, IPA собран и загружен на устройство по USB.
