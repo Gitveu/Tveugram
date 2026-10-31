@@ -514,62 +514,71 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 Logger.shared.log("data", "can't deserialize")
             }
             return data
-        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), externalRecaptchaRequestVerification: { method, siteKey in
-            return Signal { subscriber in
-                let recaptchaClient: Promise<RecaptchaClient>
-                if let current = self.recaptchaClientsBySiteKey[siteKey] {
-                    recaptchaClient = current
-                } else {
-                    recaptchaClient = Promise<RecaptchaClient>()
-                    self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
+        }, externalRequestVerificationStream: self.firebaseRequestVerificationSecretStream.get(), externalRecaptchaRequestVerification: { [weak self] method, siteKey in
+            if #available(iOS 12.0, *) {
+                return Signal { subscriber in
+                    guard let self else {
+                        subscriber.putNext(nil)
+                        subscriber.putCompletion()
+                        return EmptyDisposable
+                    }
+                    let recaptchaClient: Promise<RecaptchaClient>
+                    if let current = self.recaptchaClientsBySiteKey[siteKey] {
+                        recaptchaClient = current
+                    } else {
+                        recaptchaClient = Promise<RecaptchaClient>()
+                        self.recaptchaClientsBySiteKey[siteKey] = recaptchaClient
+                        
+                        Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
+                            Queue.mainQueue().async {
+                                guard let client else {
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
+                                    return
+                                }
+                                recaptchaClient.set(.single(client))
+                            }
+                        }
+                    }
                     
-                    Recaptcha.fetchClient(withSiteKey: siteKey) { client, error in
-                        Queue.mainQueue().async {
-                            guard let client else {
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient creation error: \(String(describing: error)).")
-                                return
+                    return (recaptchaClient.get()
+                    |> take(1)
+                    |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
+                        return Signal { subscriber in
+                            var recaptchaAction: RecaptchaAction?
+                            switch method {
+                            case "signup":
+                                recaptchaAction = RecaptchaAction.signup
+                            default:
+                                break
                             }
-                            recaptchaClient.set(.single(client))
-                        }
-                    }
-                }
-                
-                return (recaptchaClient.get()
-                |> take(1)
-                |> mapToSignal { recaptchaClient -> Signal<String?, NoError> in
-                    return Signal { subscriber in
-                        var recaptchaAction: RecaptchaAction?
-                        switch method {
-                        case "signup":
-                            recaptchaAction = RecaptchaAction.signup
-                        default:
-                            break
-                        }
-                        
-                        guard let recaptchaAction else {
-                            subscriber.putNext(nil)
-                            subscriber.putCompletion()
                             
-                            return EmptyDisposable
-                        }
-                        recaptchaClient.execute(withAction: recaptchaAction) { token, error in
-                            if let token {
-                                subscriber.putNext(token)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
-                            } else {
+                            guard let recaptchaAction else {
                                 subscriber.putNext(nil)
-                                Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
+                                subscriber.putCompletion()
+                                
+                                return EmptyDisposable
                             }
-                            subscriber.putCompletion()
+                            recaptchaClient.execute(withAction: recaptchaAction) { token, error in
+                                if let token {
+                                    subscriber.putNext(token)
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient executed successfully")
+                                } else {
+                                    subscriber.putNext(nil)
+                                    Logger.shared.log("App \(self.episodeId)", "RecaptchaClient execute error: \(String(describing: error))")
+                                }
+                                subscriber.putCompletion()
+                            }
+                            
+                            return ActionDisposable {
+                            }
                         }
-                        
-                        return ActionDisposable {
-                        }
-                    }
-                    |> runOn(Queue.mainQueue())
-                }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
+                        |> runOn(Queue.mainQueue())
+                    }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
+                }
+                |> runOn(Queue.mainQueue())
+            } else {
+                return .single("RECAPTCHA_TIMEOUT")
             }
-            |> runOn(Queue.mainQueue())
         }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
