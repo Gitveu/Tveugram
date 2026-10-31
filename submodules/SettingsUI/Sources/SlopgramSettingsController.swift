@@ -24,6 +24,7 @@ public func getSlopgramVideoMessageCamera() -> SlopgramVideoMessageCamera {
 
 public func setSlopgramVideoMessageCamera(_ camera: SlopgramVideoMessageCamera) {
     UserDefaults.standard.set(camera.rawValue, forKey: "slopgram_video_message_camera")
+    UserDefaults.standard.synchronize()
 }
 
 private final class SlopgramSettingsControllerArguments {

@@ -284,6 +284,8 @@ final class CameraOutput: NSObject {
             
             if #available(iOS 13.0, *) {
                 mirror = connection.inputPorts.first?.sourceDevicePosition == .front
+            } else {
+                mirror = self.currentPosition == .front
             }
         }
         

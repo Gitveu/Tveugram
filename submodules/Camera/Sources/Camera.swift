@@ -344,6 +344,8 @@ private final class CameraContext {
                     var front = false
                     if #available(iOS 13.0, *) {
                         front = connection.inputPorts.first?.sourceDevicePosition == .front
+                    } else {
+                        front = self.positionValue == .front
                     }
                     self.savePreviewSnapshot(pixelBuffer: pixelBuffer, front: front)
                     self.lastSnapshotTimestamp = timestamp
@@ -359,6 +361,8 @@ private final class CameraContext {
                     var front = false
                     if #available(iOS 13.0, *) {
                         front = connection.inputPorts.first?.sourceDevicePosition == .front
+                    } else {
+                        front = self.positionValue == .front
                     }
                     self.savePreviewSnapshot(pixelBuffer: pixelBuffer, front: front)
                     self.lastAdditionalSnapshotTimestamp = timestamp
@@ -385,6 +389,8 @@ private final class CameraContext {
                 var front = false
                 if #available(iOS 13.0, *) {
                     front = connection.inputPorts.first?.sourceDevicePosition == .front
+                } else {
+                    front = self.positionValue == .front
                 }
                 
                 if sampleBuffer.type == kCMMediaType_Video {

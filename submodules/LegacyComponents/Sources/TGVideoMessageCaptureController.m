@@ -1254,6 +1254,12 @@ typedef enum
 
 - (void)configureCamera
 {
+    NSString *cameraPref = [[NSUserDefaults standardUserDefaults] stringForKey:@"slopgram_video_message_camera"];
+    if ([cameraPref isEqualToString:@"back"]) {
+        _preferredPosition = AVCaptureDevicePositionBack;
+    } else {
+        _preferredPosition = AVCaptureDevicePositionFront;
+    }
     _capturePipeline = [[TGVideoCameraPipeline alloc] initWithDelegate:self position:_preferredPosition callbackQueue:dispatch_get_main_queue() liveUploadInterface:_liveUploadInterface];
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
