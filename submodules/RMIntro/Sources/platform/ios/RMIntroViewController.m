@@ -353,7 +353,9 @@ typedef enum {
     [self.view addSubview:_wrapperView];
     
     _pageScrollView = [[UIScrollView alloc]initWithFrame:self.view.bounds];
-    _pageScrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    if (@available(iOS 11.0, *)) {
+        _pageScrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
     _pageScrollView.clipsToBounds = true;
     _pageScrollView.opaque = true;
     _pageScrollView.clearsContextBeforeDrawing = false;
