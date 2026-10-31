@@ -759,6 +759,7 @@ ios_framework(
     ipa_post_processor = strip_framework,
     deps = [
         "//submodules/TelegramCore:TelegramCore",
+        "//submodules/LegacyCppCompat:LegacyCppCompat",
     ],
     linkopts = [
         "-all_load",
@@ -895,6 +896,7 @@ ios_framework(
     ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
+        "//submodules/LegacyCppCompat:LegacyCppCompat",
     ] + debug_deps,
 )
 
@@ -1738,6 +1740,7 @@ ios_application(
     deps = [
         ":Main",
         ":Lib",
+        "//submodules/LegacyCppCompat:LegacyCppCompat",
     ],
     visibility = ["//visibility:public"],
 )

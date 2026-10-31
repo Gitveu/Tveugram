@@ -68,4 +68,18 @@
   2. В `third-party/recaptcha/BUILD` для `RecaptchaEnterprise` добавлен `weak_sdk_frameworks = ["DeviceCheck"]`.
   3. В `Telegram/BUILD` для `TelegramUIFramework` добавлен `linkopts = ["-weak_framework", "DeviceCheck"]`.
   4. Проверено с помощью `otool -l`: команда загрузки `DeviceCheck` изменена с `LC_LOAD_DYLIB` на `LC_LOAD_WEAK_DYLIB`. На iOS 10 dyld игнорирует отсутствие фреймворка и продолжает запуск.
-- **Статус:** Исправлено, пересобрано, готово к проверке запуска.
+- **Статус:** Исправлено в коммите `12b27ae5f3`. Проверено: ошибка отсутствия `DeviceCheck.framework` полностью устранена dyld.
+
+---
+
+## 6. Падение при старте: dyld Symbol not found __ZNSt19bad_optional_accessD1Ev (P0)
+- **Симптом:** При открытии приложения на iPhone 5s (iOS 10.3.3) происходит вылет с крэш-дампом:
+  - Incident: `1433E0A3-F2F6-40F7-814A-05F0941C9F67`
+  - Termination Description: `DYLD, Symbol not found: __ZNSt19bad_optional_accessD1Ev | Referenced from: .../Telegram.app/Frameworks/TelegramUIFramework.framework/TelegramUIFramework | Expected in: /usr/lib/libc++.1.dylib`
+- **Причина:**
+  В C++17 классы `std::bad_optional_access`, `std::bad_variant_access` и `std::bad_any_cast` имеют ключевые функции (виртуальный деструктор и `what()`), которые в современных версиях macOS/iOS экспортируются из системной `/usr/lib/libc++.1.dylib` (начиная с iOS 12+). На iOS 10.3.3 системная `libc++.1.dylib` собрана под C++11/14 и не содержит символов `std::bad_optional_access`. Из-за этого при динамической связке dyld аварийно завершал запуск процесса.
+- **Устранение:**
+  1. Создан модуль обратной совместимости `submodules/LegacyCppCompat` (`LegacyCppCompat.mm`), содержащий реализации виртуального деструктора и методов `what()` для `std::bad_optional_access`, `std::bad_variant_access` и `std::bad_any_cast`.
+  2. Модуль подключён в `deps` к `TelegramUIFramework`, `TelegramCoreFramework` и целевому приложению `Telegram` с флагом `alwayslink = True`.
+  3. Проверено через `nm -m`: символы теперь экспортируются внутри самого бандла приложения (`__TEXT,__text` в `TelegramCoreFramework`), и загрузчик dyld больше не требует их наличия в `/usr/lib/libc++.1.dylib`.
+- **Статус:** Исправлено, пересобрано, готово к проверке.
