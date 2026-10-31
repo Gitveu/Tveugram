@@ -129,7 +129,26 @@
   5. В `ChatController.swift` и `ChatControllerMediaRecording.swift` отмена записи переведена на безусловное `dismissMediaRecorder(.dismiss)` + `deleteMediaRecording()`, добавлен сброс `mediaDraftState` и `take(1)` на потоке записи.
   6. В `ChatTextInputMediaRecordingButton.swift` анимация микрофона разблокирована независимо от `fullTranslucency`.
   7. В `AppUpdate.swift` и `ApplicationContext.swift` заблокирован опрос и показ окна обновления.
-- **Статус:** Исправлено в билде 100002 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+- **Статус:** Исправлено в билде 100002.
+
+---
+
+## 14. Падение в RecaptchaEnterprise: +[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:] (P0)
+- **Симптом:**
+  При вводе номера телефона США приложение падало с SIGABRT в фоновом потоке очереди `recCQ` (`Recaptcha Client Queue`).
+  Крэш-лог: `Telegram-2026-10-31-225337.ips`
+  - PC: `0x101eaa4fc` (`tOg7bmMI.iYTQxzTq` в `RecaptchaEnterprise`)
+  - Вызов: `+[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:]`
+  - Причина: Метод `archivedDataWithRootObject:requiringSecureCoding:error:` появился только в iOS 11.0+. На iOS 10.3.3 метод отсутствует, вызов приводил к `NSInvalidArgumentException: unrecognized selector sent to class`.
+- **Устранение:**
+  В `submodules/LegacyCppCompat.mm` добавлены глобальные runtime-методы для `NSKeyedArchiver` и `NSKeyedUnarchiver`:
+  1. `+[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:]` (транслируется в `archivedDataWithRootObject:`)
+  2. `+[NSKeyedUnarchiver unarchiveTopLevelObjectWithData:error:]` (транслируется в `unarchiveObjectWithData:`)
+  3. `+[NSKeyedUnarchiver unarchivedObjectOfClass:fromData:error:]`
+  4. `+[NSKeyedUnarchiver unarchivedObjectOfClasses:fromData:error:]`
+  5. `-[NSKeyedUnarchiver initForReadingFromData:error:]` (транслируется в `initForReadingWithData:`)
+- **Статус:** Исправлено в билде 100003 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
 
 
 
@@ -171,7 +190,26 @@
   5. В `ChatController.swift` и `ChatControllerMediaRecording.swift` отмена записи переведена на безусловное `dismissMediaRecorder(.dismiss)` + `deleteMediaRecording()`, добавлен сброс `mediaDraftState` и `take(1)` на потоке записи.
   6. В `ChatTextInputMediaRecordingButton.swift` анимация микрофона разблокирована независимо от `fullTranslucency`.
   7. В `AppUpdate.swift` и `ApplicationContext.swift` заблокирован опрос и показ окна обновления.
-- **Статус:** Исправлено в билде 100002 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+- **Статус:** Исправлено в билде 100002.
+
+---
+
+## 14. Падение в RecaptchaEnterprise: +[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:] (P0)
+- **Симптом:**
+  При вводе номера телефона США приложение падало с SIGABRT в фоновом потоке очереди `recCQ` (`Recaptcha Client Queue`).
+  Крэш-лог: `Telegram-2026-10-31-225337.ips`
+  - PC: `0x101eaa4fc` (`tOg7bmMI.iYTQxzTq` в `RecaptchaEnterprise`)
+  - Вызов: `+[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:]`
+  - Причина: Метод `archivedDataWithRootObject:requiringSecureCoding:error:` появился только в iOS 11.0+. На iOS 10.3.3 метод отсутствует, вызов приводил к `NSInvalidArgumentException: unrecognized selector sent to class`.
+- **Устранение:**
+  В `submodules/LegacyCppCompat.mm` добавлены глобальные runtime-методы для `NSKeyedArchiver` и `NSKeyedUnarchiver`:
+  1. `+[NSKeyedArchiver archivedDataWithRootObject:requiringSecureCoding:error:]` (транслируется в `archivedDataWithRootObject:`)
+  2. `+[NSKeyedUnarchiver unarchiveTopLevelObjectWithData:error:]` (транслируется в `unarchiveObjectWithData:`)
+  3. `+[NSKeyedUnarchiver unarchivedObjectOfClass:fromData:error:]`
+  4. `+[NSKeyedUnarchiver unarchivedObjectOfClasses:fromData:error:]`
+  5. `-[NSKeyedUnarchiver initForReadingFromData:error:]` (транслируется в `initForReadingWithData:`)
+- **Статус:** Исправлено в билде 100003 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
 
 
 

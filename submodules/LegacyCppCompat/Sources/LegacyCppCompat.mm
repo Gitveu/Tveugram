@@ -121,6 +121,68 @@ static NSInteger dummy_multipathServiceType(id self, SEL _cmd) {
     return 0;
 }
 
+static NSData *compat_archivedDataWithRootObject(id self, SEL _cmd, id rootObject, BOOL requiringSecureCoding, NSError **error) {
+    (void)self; (void)_cmd; (void)requiringSecureCoding;
+    @try {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        NSData *data = [NSKeyedArchiver archivedDataWithRootObject:rootObject];
+#pragma clang diagnostic pop
+        if (error) {
+            *error = nil;
+        }
+        return data;
+    } @catch (NSException *exception) {
+        if (error) {
+            *error = [NSError errorWithDomain:exception.name code:-1 userInfo:exception.userInfo];
+        }
+        return nil;
+    }
+}
+
+static id compat_unarchiveTopLevelObjectWithData(id self, SEL _cmd, NSData *data, NSError **error) {
+    (void)self; (void)_cmd;
+    if (data == nil) {
+        return nil;
+    }
+    @try {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        id object = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+#pragma clang diagnostic pop
+        if (error) {
+            *error = nil;
+        }
+        return object;
+    } @catch (NSException *exception) {
+        if (error) {
+            *error = [NSError errorWithDomain:exception.name code:-1 userInfo:exception.userInfo];
+        }
+        return nil;
+    }
+}
+
+static id compat_unarchivedObjectOfClass(id self, SEL _cmd, Class cls, NSData *data, NSError **error) {
+    (void)cls;
+    return compat_unarchiveTopLevelObjectWithData(self, _cmd, data, error);
+}
+
+static id compat_unarchivedObjectOfClasses(id self, SEL _cmd, NSSet *classes, NSData *data, NSError **error) {
+    (void)classes;
+    return compat_unarchiveTopLevelObjectWithData(self, _cmd, data, error);
+}
+
+static id compat_initForReadingFromData(id self, SEL _cmd, NSData *data, NSError **error) {
+    (void)self; (void)_cmd;
+    if (error) {
+        *error = nil;
+    }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return [self initForReadingWithData:data];
+#pragma clang diagnostic pop
+}
+
 __attribute__((constructor))
 static void install_ios10_runtime_fallbacks() {
     if (![UIScrollView instancesRespondToSelector:@selector(setContentInsetAdjustmentBehavior:)]) {
@@ -158,6 +220,48 @@ static void install_ios10_runtime_fallbacks() {
             class_addMethod(nscfConfigClass, @selector(setMultipathServiceType:), (IMP)dummy_setMultipathServiceType, "v@:q");
             class_addMethod(nscfConfigClass, @selector(multipathServiceType), (IMP)dummy_multipathServiceType, "q@:");
         }
+    }
+    
+    Class archiverMetaClass = object_getClass([NSKeyedArchiver class]);
+    SEL archivedDataSel = sel_registerName("archivedDataWithRootObject:requiringSecureCoding:error:");
+    if (![NSKeyedArchiver respondsToSelector:archivedDataSel]) {
+        class_addMethod(archiverMetaClass,
+                        archivedDataSel,
+                        (IMP)compat_archivedDataWithRootObject,
+                        "@@:@B^@");
+    }
+    
+    Class unarchiverMetaClass = object_getClass([NSKeyedUnarchiver class]);
+    SEL unarchiveTopLevelSel = sel_registerName("unarchiveTopLevelObjectWithData:error:");
+    if (![NSKeyedUnarchiver respondsToSelector:unarchiveTopLevelSel]) {
+        class_addMethod(unarchiverMetaClass,
+                        unarchiveTopLevelSel,
+                        (IMP)compat_unarchiveTopLevelObjectWithData,
+                        "@@:@^@");
+    }
+    
+    SEL unarchivedOfClassSel = sel_registerName("unarchivedObjectOfClass:fromData:error:");
+    if (![NSKeyedUnarchiver respondsToSelector:unarchivedOfClassSel]) {
+        class_addMethod(unarchiverMetaClass,
+                        unarchivedOfClassSel,
+                        (IMP)compat_unarchivedObjectOfClass,
+                        "@@:@@^@");
+    }
+    
+    SEL unarchivedOfClassesSel = sel_registerName("unarchivedObjectOfClasses:fromData:error:");
+    if (![NSKeyedUnarchiver respondsToSelector:unarchivedOfClassesSel]) {
+        class_addMethod(unarchiverMetaClass,
+                        unarchivedOfClassesSel,
+                        (IMP)compat_unarchivedObjectOfClasses,
+                        "@@:@@^@");
+    }
+    
+    SEL initForReadingSel = sel_registerName("initForReadingFromData:error:");
+    if (![NSKeyedUnarchiver instancesRespondToSelector:initForReadingSel]) {
+        class_addMethod([NSKeyedUnarchiver class],
+                        initForReadingSel,
+                        (IMP)compat_initForReadingFromData,
+                        "@@:@^@");
     }
 }
 #endif
