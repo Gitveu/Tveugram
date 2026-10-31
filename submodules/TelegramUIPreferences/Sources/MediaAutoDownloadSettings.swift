@@ -283,13 +283,13 @@ public struct EnergyUsageSettings: Codable, Equatable {
         
         return EnergyUsageSettings(
             activationThreshold: 15,
-            autoplayVideo: true,
-            autoplayGif: true,
-            loopStickers: true,
+            autoplayVideo: isCapable,
+            autoplayGif: isCapable,
+            loopStickers: isCapable,
             loopEmoji: isCapable,
             fullTranslucency: isCapable,
-            extendBackgroundWork: true,
-            autodownloadInBackground: true
+            extendBackgroundWork: isCapable,
+            autodownloadInBackground: isCapable
         )
     }()
     

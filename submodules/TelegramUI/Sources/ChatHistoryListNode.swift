@@ -45,7 +45,7 @@ struct ChatTopVisibleMessageRange: Equatable {
     var isLoading: Bool
 }
 
-private let historyMessageCount: Int = 44
+private let historyMessageCount: Int = ProcessInfo.processInfo.activeProcessorCount <= 2 ? 20 : 44
 
 enum ChatHistoryViewScrollPosition {
     case unread(index: MessageIndex)

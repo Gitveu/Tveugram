@@ -293,6 +293,7 @@ extension ChatControllerImpl {
                 var resource: LocalFileMediaResource?
                 self.recorderDataDisposable.set(
                     (audioRecorderValue.takenRecordedData()
+                     |> take(1)
                      |> deliverOnMainQueue).startStrict(
                         next: { [weak self] data in
                             if let strongSelf = self, let data = data {
@@ -348,6 +349,7 @@ extension ChatControllerImpl {
             case let .send(viewOnce):
                 self.chatDisplayNode.updateRecordedMediaDeleted(false)
                 self.recorderDataDisposable.set((audioRecorderValue.takenRecordedData()
+                |> take(1)
                 |> deliverOnMainQueue).startStrict(next: { [weak self] data in
                     if let strongSelf = self, let data = data {
                         if data.duration < 0.5 {
@@ -553,7 +555,8 @@ extension ChatControllerImpl {
     }
     
     func deleteMediaRecording() {
-        if let _ = self.audioRecorderValue {
+        if let audioRecorder = self.audioRecorderValue {
+            audioRecorder.stop()
             self.audioRecorder.set(.single(nil))
         } else if let _ = self.videoRecorderValue {
             self.videoRecorder.set(.single(nil))
@@ -680,6 +683,10 @@ extension ChatControllerImpl {
         guard let recordedMediaPreview = self.presentationInterfaceState.interfaceState.mediaDraftState else {
             return
         }
+        
+        self.updateChatPresentationInterfaceState(animated: false, interactive: false, {
+            $0.updatedInterfaceState { $0.withUpdatedMediaDraftState(nil) }
+        })
         
         switch recordedMediaPreview {
         case let .audio(audio):

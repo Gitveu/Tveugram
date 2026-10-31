@@ -1299,7 +1299,8 @@ public final class ChatListNode: ListView {
             self.chatListFilterValue.set(.single(self.chatListFilter))
             
             if self.chatListFilter != oldValue {
-                self.setChatListLocation(.initial(count: 50, filter: self.chatListFilter))
+                let initialCount = ProcessInfo.processInfo.activeProcessorCount <= 2 ? 25 : 50
+                self.setChatListLocation(.initial(count: initialCount, filter: self.chatListFilter))
             }
         }
     }
@@ -2904,7 +2905,8 @@ public final class ChatListNode: ListView {
         let initialLocation: ChatListNodeLocation
         switch mode {
         case .chatList:
-            initialLocation = .initial(count: 50, filter: self.chatListFilter)
+            let initialCount = ProcessInfo.processInfo.activeProcessorCount <= 2 ? 25 : 50
+            initialLocation = .initial(count: initialCount, filter: self.chatListFilter)
         case .peers, .peerType:
             initialLocation = .initial(count: 200, filter: self.chatListFilter)
         }

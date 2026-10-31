@@ -897,6 +897,7 @@ ios_framework(
     deps = [
         "//submodules/TelegramUI:TelegramUI",
         "//submodules/LegacyCppCompat:LegacyCppCompat",
+        "//submodules/LegacyNetwork:LegacyNetwork",
     ] + debug_deps,
 )
 
@@ -1741,6 +1742,7 @@ ios_application(
         ":Main",
         ":Lib",
         "//submodules/LegacyCppCompat:LegacyCppCompat",
+        "//submodules/LegacyNetwork:LegacyNetwork",
     ],
     visibility = ["//visibility:public"],
 )

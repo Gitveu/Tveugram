@@ -558,6 +558,7 @@ final class AuthorizedApplicationContext {
             }
         }))
         
+        /*
         self.appUpdateInfoDisposable.set((context.account.stateManager.appUpdateInfo
         |> deliverOnMainQueue).start(next: { [weak self] appUpdateInfo in
             guard let strongSelf = self, strongSelf.currentAppUpdateInfo != appUpdateInfo else {
@@ -570,6 +571,7 @@ final class AuthorizedApplicationContext {
                 strongSelf.mainWindow.present(controller, on: .update)
             }
         }))
+        */
         
         if #available(iOS 10.0, *) {
             let permissionsPosition = ValuePromise(0, ignoreRepeated: true)

@@ -86,21 +86,7 @@ const char* bad_any_cast::what() const noexcept {
 
 }
 
-// Fallback symbols for Network.framework on iOS < 12
-// to prevent dyld abort if referenced by binary frameworks (e.g. RecaptchaEnterprise).
-extern "C" {
-void* $s7Network13NWPathMonitorCMa(long long) { return nullptr; }
-void* $s7Network13NWPathMonitorCMn = nullptr;
-void* $s7Network13NWPathMonitorCACycfc(void* self) { return self; }
-void $s7Network13NWPathMonitorC5start5queueySo012OS_dispatch_E0C_tF(void*, void*) {}
-void $s7Network13NWPathMonitorC6cancelyyF(void*) {}
-void* $s7Network12NWConnectionCMa(long long) { return nullptr; }
-void* $s7Network12NWConnectionCMn = nullptr;
-void* $s7Network12NWParametersCMa(long long) { return nullptr; }
-void* $s7Network12NWParametersC3tcpACvgZ() { return nullptr; }
-void* $s7Network10NWEndpointOMa(long long) { return nullptr; }
-void* $s7Network6NWPathVMa(long long) { return nullptr; }
-}
+// Network.framework fallback classes for iOS < 12 are implemented in Swift in //submodules/LegacyNetwork:LegacyNetwork
 
 #if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH
 static void dummy_setContentInsetAdjustmentBehavior(id self, SEL _cmd, NSInteger behavior) {

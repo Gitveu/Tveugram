@@ -9384,7 +9384,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             alertAction?()
             Queue.mainQueue().after(delay ? 0.2 : 0.0) {
                 self.present(textAlertController(context: self.context, updatedPresentationData: self.updatedPresentationData, title: nil, text: self.presentationData.strings.Conversation_DiscardVoiceMessageDescription, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Conversation_DiscardVoiceMessageAction, action: { [weak self] in
-                    self?.stopMediaRecorder()
+                    self?.dismissMediaRecorder(.dismiss)
+                    self?.deleteMediaRecording()
                     Queue.mainQueue().after(0.1) {
                         action()
                     }
@@ -9403,7 +9404,8 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             alertAction?()
             Queue.mainQueue().after(delay ? 0.2 : 0.0) {
                 self.present(textAlertController(context: self.context, updatedPresentationData: self.updatedPresentationData, title: nil, text: self.presentationData.strings.Conversation_DiscardRecordedVoiceMessageDescription, actions: [TextAlertAction(type: .genericAction, title: self.presentationData.strings.Common_Cancel, action: {}), TextAlertAction(type: .defaultAction, title: self.presentationData.strings.Conversation_DiscardRecordedVoiceMessageAction, action: { [weak self] in
-                    self?.stopMediaRecorder()
+                    self?.dismissMediaRecorder(.dismiss)
+                    self?.deleteMediaRecording()
                     Queue.mainQueue().after(0.1) {
                         action()
                     }

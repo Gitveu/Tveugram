@@ -544,10 +544,8 @@ public final class ChatTextInputMediaRecordingButton: TGModernConversationInputM
     override public func animateIn() {
         super.animateIn()
         
-        if self.context.sharedContext.energyUsageSettings.fullTranslucency {
-            micDecoration.isHidden = false
-            micDecoration.startAnimating()
-        }
+        self.micDecoration.isHidden = false
+        self.micDecoration.startAnimating()
 
         let transition = ContainedViewLayoutTransition.animated(duration: 0.15, curve: .easeInOut)
         if let layer = self.animationView.view?.layer {

@@ -110,27 +110,27 @@
 
 ---
 
-## 12. Падение на экране ввода кода: разыменование nil kCACornerCurveContinuous из-за Swift WMO (P0)
-- **Симптом:** При попытке авторизации по номеру телефона сервер успешно отправляет проверочный код, но при открытии экрана ввода кода приложение аварийно завершается:
-  - Incident: `Telegram-2026-10-31-171916.ips`
-  - Exception Type: `EXC_BAD_ACCESS (SIGSEGV)`
-  - Exception Subtype: `KERN_INVALID_ADDRESS at 0x0000000000000000`
-  - PC: `0x102613a2c` (`TelegramUIFramework + 0xdefa2c` в `CodeInputView.update`)
-  - Ассемблер места падения: `ldr x8, [x8]` где `x8 = 0x4ce56d0` (указатель на `_kCACornerCurveContinuous`)
-- **Причина:**
-  В `CodeInputView.swift:98` присутствовал вызов:
-  ```swift
-  if #available(iOS 13.0, *) {
-      self.backgroundView.layer.cornerCurve = .continuous
-  }
-  ```
-  При сборке с флагом `-O` / Whole Module Optimization (WMO) компилятор Swift вынес чтение константы `kCACornerCurveContinuous` наружу (hoisting) до проверки `#available(iOS 13.0, *)`.
-  Так как на iOS 10.3 константа отсутствует в системном `QuartzCore.framework`, слот GOT dyld оставался равным `0x0`. Команда `ldr x8, [x8]` разыменовывала нулевой указатель и приводила к мгновенному крашу.
+## 13. Не присылался код на номера США / reCAPTCHA, лаги A7 и зависание ГС (P0)
+- **Симптомы:**
+  1. При вводе номера США (+1) код подтверждения не приходил в активное приложение / по SMS, хотя на номера других стран (Беларусь) приходил успешно.
+  2. Зависание до 5 секунд при открытии закреплённых сообщений и тяжелые лаги при старте.
+  3. Голосовые сообщения при отмене (Discard) зависали и отправлялись до 10 раз; пропала анимация громкости микрофона.
+  4. Назойливое модальное окно «Доступно обновление Телеграм».
+- **Причины:**
+  1. Для номеров США Telegram-сервер возвращает RPC-ошибку 403 `RECAPTCHA_CHECK_signup__<siteKey>`. В `AppDelegate.swift` обработчик проверки был заблокирован проверкой `if #available(iOS 12.0, *)`, возвращавшей `"RECAPTCHA_TIMEOUT"`. Из-за невалидного токена сервер не отправлял SMS/код. Бинарный фреймворк `RecaptchaEnterprise` требовал `Network.framework` (`NWPathMonitor`, `NWConnection`), отсутствующий на iOS 10.
+  2. При переходе к закреплённым сообщениям (`ChatHistoryViewForLocation.swift:306`) запрос к базе данных запрашивал сразу `count: 128` сообщений, а базовый размер выборки `historyMessageCount` составлял 44 сообщения. На 2-ядерном Apple A7 одновременный лейаут и парсинг сотен текстовых и медиа элементов на главном потоке блокировал UI на 5 секунд.
+  3. При нажатии «Discard» на алерте отмены вызывался `stopMediaRecorder()` (перевод в предпросмотр черновика) вместо удаления; отсутствовал сброс черновика при асинхронной отправке, и множественные нажатия по UI приводили к повторной отправке одного и того же аудиофайла.
+  4. Анимация микрофона была заблокирована флагом `fullTranslucency`, отключённым на слабых GPU.
 - **Устранение:**
-  1. В `submodules/CodeInputView/Sources/CodeInputView.swift` удалено свойство `self.backgroundView.layer.cornerCurve = .continuous`.
-  2. В `submodules/LegacyCppCompat.mm` определены и экспортированы глобальные фолбэк-константы (`kCACornerCurveContinuous`, `kCACornerCurveCircular`, `UIFontDescriptorSystemDesign*`, `UITextContentTypeOneTimeCode`), что защищает от подобных оптимизаций компилятора в других местах кода.
-  3. В `submodules/AuthorizationUI/Sources/AuthorizationSequencePhoneEntryControllerNode.swift` добавлена синяя интерактивная кнопка «Войти по QR-коду» («Log in with QR Code») для удобного входа по QR без необходимости вводить номер.
-- **Статус:** Исправлено в коммите `b978eee1a0`. Новый IPA (94 МБ) собран и загружен по USB на iPhone 5s в `/Downloads/Telegram.ipa`.
+  1. Создан нативный Swift-модуль `submodules/LegacyNetwork` (`module_name = "Network"`), предоставляющий ABI-совместимые классы `NWPathMonitor`, `NWConnection`, `NWParameters`, `NWEndpoint` и `NWPath` со статусом `.satisfied` / `.ready`.
+  2. В `AppDelegate.swift` снят барьер `if #available(iOS 12.0, *)` для `externalRecaptchaRequestVerification` — теперь `RecaptchaEnterprise` успешно исполняется на iOS 10.
+  3. Установлено имя модели `Slopgram` и версия приложения `1.0 (100002)` — в сессиях отображается как `Slopgram / 1.0 (100002)`.
+  4. На 2-ядерных чипах (Apple A7): выборка сообщений при скролле закреплённых снижена со 128 до 30; размер `historyMessageCount` снижен с 44 до 20; начальная выборка диалогов снижена с 50 до 25.
+  5. В `ChatController.swift` и `ChatControllerMediaRecording.swift` отмена записи переведена на безусловное `dismissMediaRecorder(.dismiss)` + `deleteMediaRecording()`, добавлен сброс `mediaDraftState` и `take(1)` на потоке записи.
+  6. В `ChatTextInputMediaRecordingButton.swift` анимация микрофона разблокирована независимо от `fullTranslucency`.
+  7. В `AppUpdate.swift` и `ApplicationContext.swift` заблокирован опрос и показ окна обновления.
+- **Статус:** Исправлено в билде 100002 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
 
 
 
@@ -152,27 +152,27 @@
 
 ---
 
-## 12. Падение на экране ввода кода: разыменование nil kCACornerCurveContinuous из-за Swift WMO (P0)
-- **Симптом:** При попытке авторизации по номеру телефона сервер успешно отправляет проверочный код, но при открытии экрана ввода кода приложение аварийно завершается:
-  - Incident: `Telegram-2026-10-31-171916.ips`
-  - Exception Type: `EXC_BAD_ACCESS (SIGSEGV)`
-  - Exception Subtype: `KERN_INVALID_ADDRESS at 0x0000000000000000`
-  - PC: `0x102613a2c` (`TelegramUIFramework + 0xdefa2c` в `CodeInputView.update`)
-  - Ассемблер места падения: `ldr x8, [x8]` где `x8 = 0x4ce56d0` (указатель на `_kCACornerCurveContinuous`)
-- **Причина:**
-  В `CodeInputView.swift:98` присутствовал вызов:
-  ```swift
-  if #available(iOS 13.0, *) {
-      self.backgroundView.layer.cornerCurve = .continuous
-  }
-  ```
-  При сборке с флагом `-O` / Whole Module Optimization (WMO) компилятор Swift вынес чтение константы `kCACornerCurveContinuous` наружу (hoisting) до проверки `#available(iOS 13.0, *)`.
-  Так как на iOS 10.3 константа отсутствует в системном `QuartzCore.framework`, слот GOT dyld оставался равным `0x0`. Команда `ldr x8, [x8]` разыменовывала нулевой указатель и приводила к мгновенному крашу.
+## 13. Не присылался код на номера США / reCAPTCHA, лаги A7 и зависание ГС (P0)
+- **Симптомы:**
+  1. При вводе номера США (+1) код подтверждения не приходил в активное приложение / по SMS, хотя на номера других стран (Беларусь) приходил успешно.
+  2. Зависание до 5 секунд при открытии закреплённых сообщений и тяжелые лаги при старте.
+  3. Голосовые сообщения при отмене (Discard) зависали и отправлялись до 10 раз; пропала анимация громкости микрофона.
+  4. Назойливое модальное окно «Доступно обновление Телеграм».
+- **Причины:**
+  1. Для номеров США Telegram-сервер возвращает RPC-ошибку 403 `RECAPTCHA_CHECK_signup__<siteKey>`. В `AppDelegate.swift` обработчик проверки был заблокирован проверкой `if #available(iOS 12.0, *)`, возвращавшей `"RECAPTCHA_TIMEOUT"`. Из-за невалидного токена сервер не отправлял SMS/код. Бинарный фреймворк `RecaptchaEnterprise` требовал `Network.framework` (`NWPathMonitor`, `NWConnection`), отсутствующий на iOS 10.
+  2. При переходе к закреплённым сообщениям (`ChatHistoryViewForLocation.swift:306`) запрос к базе данных запрашивал сразу `count: 128` сообщений, а базовый размер выборки `historyMessageCount` составлял 44 сообщения. На 2-ядерном Apple A7 одновременный лейаут и парсинг сотен текстовых и медиа элементов на главном потоке блокировал UI на 5 секунд.
+  3. При нажатии «Discard» на алерте отмены вызывался `stopMediaRecorder()` (перевод в предпросмотр черновика) вместо удаления; отсутствовал сброс черновика при асинхронной отправке, и множественные нажатия по UI приводили к повторной отправке одного и того же аудиофайла.
+  4. Анимация микрофона была заблокирована флагом `fullTranslucency`, отключённым на слабых GPU.
 - **Устранение:**
-  1. В `submodules/CodeInputView/Sources/CodeInputView.swift` удалено свойство `self.backgroundView.layer.cornerCurve = .continuous`.
-  2. В `submodules/LegacyCppCompat.mm` определены и экспортированы глобальные фолбэк-константы (`kCACornerCurveContinuous`, `kCACornerCurveCircular`, `UIFontDescriptorSystemDesign*`, `UITextContentTypeOneTimeCode`), что защищает от подобных оптимизаций компилятора в других местах кода.
-  3. В `submodules/AuthorizationUI/Sources/AuthorizationSequencePhoneEntryControllerNode.swift` добавлена синяя интерактивная кнопка «Войти по QR-коду» («Log in with QR Code») для удобного входа по QR без необходимости вводить номер.
-- **Статус:** Исправлено в коммите `b978eee1a0`. Новый IPA (94 МБ) собран и загружен по USB на iPhone 5s в `/Downloads/Telegram.ipa`.
+  1. Создан нативный Swift-модуль `submodules/LegacyNetwork` (`module_name = "Network"`), предоставляющий ABI-совместимые классы `NWPathMonitor`, `NWConnection`, `NWParameters`, `NWEndpoint` и `NWPath` со статусом `.satisfied` / `.ready`.
+  2. В `AppDelegate.swift` снят барьер `if #available(iOS 12.0, *)` для `externalRecaptchaRequestVerification` — теперь `RecaptchaEnterprise` успешно исполняется на iOS 10.
+  3. Установлено имя модели `Slopgram` и версия приложения `1.0 (100002)` — в сессиях отображается как `Slopgram / 1.0 (100002)`.
+  4. На 2-ядерных чипах (Apple A7): выборка сообщений при скролле закреплённых снижена со 128 до 30; размер `historyMessageCount` снижен с 44 до 20; начальная выборка диалогов снижена с 50 до 25.
+  5. В `ChatController.swift` и `ChatControllerMediaRecording.swift` отмена записи переведена на безусловное `dismissMediaRecorder(.dismiss)` + `deleteMediaRecording()`, добавлен сброс `mediaDraftState` и `take(1)` на потоке записи.
+  6. В `ChatTextInputMediaRecordingButton.swift` анимация микрофона разблокирована независимо от `fullTranslucency`.
+  7. В `AppUpdate.swift` и `ApplicationContext.swift` заблокирован опрос и показ окна обновления.
+- **Статус:** Исправлено в билде 100002 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
 
 
 

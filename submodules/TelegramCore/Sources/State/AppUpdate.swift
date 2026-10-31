@@ -27,15 +27,5 @@ extension AppUpdateInfo {
 }
 
 func managedAppUpdateInfo(network: Network, stateManager: AccountStateManager) -> Signal<Never, NoError> {
-    let poll = network.request(Api.functions.help.getAppUpdate(source: ""))
-    |> retryRequest
-    |> mapToSignal { [weak stateManager] result -> Signal<Never, NoError> in
-        let updated = AppUpdateInfo(apiAppUpdate: result)
-        stateManager?.modifyAppUpdateInfo { _ in
-            return updated
-        }
-        return .complete()
-    }
-    
-    return (poll |> then(.complete() |> suspendAwareDelay(12.0 * 60.0 * 60.0, queue: Queue.concurrentDefaultQueue()))) |> restart
+    return .never()
 }
