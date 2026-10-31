@@ -889,6 +889,10 @@ ios_framework(
     minimum_os_version = minimum_os_version,
     extension_safe = True,
     ipa_post_processor = strip_framework,
+    linkopts = [
+        "-weak_framework",
+        "DeviceCheck",
+    ],
     deps = [
         "//submodules/TelegramUI:TelegramUI",
     ] + debug_deps,

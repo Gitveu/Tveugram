@@ -51,4 +51,21 @@
 - **Устранение:**
   - В `Telegram/BUILD` исключены `:BroadcastUploadExtension` и `:WidgetExtension` из таргета `extensions`.
   - Сохранены нативные расширения, полностью поддерживаемые в iOS 10: `:ShareExtension` (`com.apple.share-services`), `:NotificationContentExtension` (`com.apple.usernotifications.content-extension`), `:NotificationServiceExtension` (`com.apple.usernotifications.service`) и `:IntentsExtension` (`com.apple.intents-service`).
-- **Статус:** Исправлено в коммите `d8cdb20c33`. Собрано в новом IPA, на физическом устройстве ожидает проверки.
+- **Статус:** Исправлено в коммите `d8cdb20c33`. Проверено: приложение успешно устанавливается на iPhone 5s.
+
+---
+
+## 5. Падение при холодном старте: dyld Library not loaded DeviceCheck.framework (P0)
+- **Симптом:** При открытии приложения на iPhone 5s (iOS 10.3.3) происходит мгновенный вылет до отрисовки первого кадра.
+- **Данные крэш-репорта (снят напрямую с подключенного iPhone 5s через `idevicecrashreport`):**
+  - Incident: `C4746B7C-AB88-4678-94D7-D670944220F2`
+  - Exception Type: `EXC_CRASH (SIGABRT)`
+  - Termination Description: `DYLD, Library not loaded: /System/Library/Frameworks/DeviceCheck.framework/DeviceCheck | Referenced from: .../Telegram.app/Frameworks/TelegramUIFramework.framework/TelegramUIFramework | Reason: image not found`
+- **Причина:**
+  `DeviceCheck.framework` появился только в iOS 11.0. На iOS 10.3.3 системный путь `/System/Library/Frameworks/DeviceCheck.framework` отсутствует. `TelegramUIFramework` линковал его с командой `LC_LOAD_DYLIB` (жёсткая зависимость) из-за `import DeviceCheck` в `AppDelegate.swift` и транзитивной зависимости из Google `RecaptchaEnterprise`.
+- **Устранение:**
+  1. Удален неиспользуемый `import DeviceCheck` из `submodules/TelegramUI/Sources/AppDelegate.swift`.
+  2. В `third-party/recaptcha/BUILD` для `RecaptchaEnterprise` добавлен `weak_sdk_frameworks = ["DeviceCheck"]`.
+  3. В `Telegram/BUILD` для `TelegramUIFramework` добавлен `linkopts = ["-weak_framework", "DeviceCheck"]`.
+  4. Проверено с помощью `otool -l`: команда загрузки `DeviceCheck` изменена с `LC_LOAD_DYLIB` на `LC_LOAD_WEAK_DYLIB`. На iOS 10 dyld игнорирует отсутствие фреймворка и продолжает запуск.
+- **Статус:** Исправлено, пересобрано, готово к проверке запуска.

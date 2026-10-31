@@ -13,7 +13,7 @@ import TelegramCallsUI
 import TelegramVoip
 import BuildConfig
 import BuildConfigExtra
-import DeviceCheck
+// import DeviceCheck (iOS 11+ only; removed to prevent strong dyld load on iOS 10.3)
 import AccountContext
 import OverlayStatusController
 import UndoUI

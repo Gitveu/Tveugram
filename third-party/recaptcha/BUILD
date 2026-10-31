@@ -8,6 +8,9 @@ load(
 apple_static_xcframework_import(
     name = "RecaptchaEnterprise",
     xcframework_imports = glob(["RecaptchaEnterprise.xcframework/**"]),
+    weak_sdk_frameworks = [
+        "DeviceCheck",
+    ],
     features = [
     ],
     visibility = [
