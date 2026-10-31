@@ -310,6 +310,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let phoneAndCountryNode: PhoneAndCountryNode
     private let contactSyncNode: ContactSyncNode
     private let proceedNode: SolidRoundedButtonNode
+    private let qrLoginButton: HighlightableButtonNode
     
     private var qrNode: ASImageNode?
     private let exportTokenDisposable = MetaDisposable()
@@ -417,6 +418,10 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.proceedNode.progressType = .embedded
         self.proceedNode.isEnabled = false
         
+        self.qrLoginButton = HighlightableButtonNode()
+        let isRussian = strings.primaryComponent.languageCode.hasPrefix("ru")
+        self.qrLoginButton.setTitle(isRussian ? "Войти по QR-коду" : "Log in with QR Code", with: Font.regular(17.0), with: theme.list.itemAccentColor, for: .normal)
+        
         super.init()
         
         self.setViewBlock({
@@ -432,6 +437,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.addSubnode(self.phoneAndCountryNode)
         self.addSubnode(self.contactSyncNode)
         self.addSubnode(self.proceedNode)
+        self.addSubnode(self.qrLoginButton)
         self.addSubnode(self.animationNode)
         self.addSubnode(self.managedAnimationNode)
         self.contactSyncNode.isHidden = true
@@ -461,6 +467,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.proceedNode.pressed = { [weak self] in
             self?.checkPhone?()
         }
+        
+        self.qrLoginButton.addTarget(self, action: #selector(self.qrButtonPressed), forControlEvents: .touchUpInside)
         
         self.animationNode.completed = { [weak self] _ in
             self?.animationNode.removeFromSupernode()
@@ -501,7 +509,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.titleNode,
             self.noticeNode,
             self.phoneAndCountryNode,
-            self.contactSyncNode
+            self.contactSyncNode,
+            self.qrLoginButton
         ]
 
         for node in nodes {
@@ -530,7 +539,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.titleNode,
             self.noticeNode,
             self.phoneAndCountryNode,
-            self.contactSyncNode
+            self.contactSyncNode,
+            self.qrLoginButton
         ]
         
         self.animationNode.layer.animateScale(from: 0.3, to: 1.0, duration: 0.3)
@@ -597,6 +607,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             self.contactSyncNode.isHidden = true
         }
         
+        let isRussian = self.strings.primaryComponent.languageCode.hasPrefix("ru")
+        let qrButtonText = self.qrNode != nil ? (isRussian ? "Скрыть QR-код" : "Hide QR Code") : (isRussian ? "Войти по QR-коду" : "Log in with QR Code")
+        self.qrLoginButton.setTitle(qrButtonText, with: Font.regular(17.0), with: self.theme.list.itemAccentColor, for: .normal)
+        let qrButtonSize = self.qrLoginButton.measure(CGSize(width: maximumWidth, height: 36.0))
+        items.append(AuthorizationLayoutItem(node: self.qrLoginButton, size: qrButtonSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 14.0, maxValue: 14.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
+        
         let buttonFrame: CGRect
         if let forcedButtonFrame = self.forcedButtonFrame, (layout.inputHeight ?? 0.0).isZero {
             buttonFrame = forcedButtonFrame
@@ -648,7 +664,15 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         }
     }
     
+    @objc private func qrButtonPressed() {
+        self.toggleQrDisplay()
+    }
+    
     @objc private func debugQrTap(_ recognizer: UITapGestureRecognizer) {
+        self.toggleQrDisplay()
+    }
+    
+    private func toggleQrDisplay() {
         if let qrNode = self.qrNode {
             qrNode.removeFromSupernode()
             self.qrNode = nil
@@ -661,6 +685,9 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
             
             self.refreshQrToken()
         }
+        let isRussian = self.strings.primaryComponent.languageCode.hasPrefix("ru")
+        let qrButtonText = self.qrNode != nil ? (isRussian ? "Скрыть QR-код" : "Hide QR Code") : (isRussian ? "Войти по QR-коду" : "Log in with QR Code")
+        self.qrLoginButton.setTitle(qrButtonText, with: Font.regular(17.0), with: self.theme.list.itemAccentColor, for: .normal)
     }
     
     private func refreshQrToken() {

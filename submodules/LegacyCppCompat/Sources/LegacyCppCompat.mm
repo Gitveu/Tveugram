@@ -1,9 +1,28 @@
+#include <TargetConditionals.h>
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH
 #import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
+#else
+#import <Foundation/Foundation.h>
+#endif
 #import <objc/runtime.h>
 #include <optional>
 #include <variant>
 #include <any>
 #include <dlfcn.h>
+
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH
+// Compatibility definitions for QuartzCore & UIKit constants missing in iOS 10.
+// Under Whole Module Optimization (-O), the Swift compiler can hoist dereferences
+// of weakly-imported constants before #available guards, leading to SIGSEGV on NULL.
+CALayerCornerCurve const kCACornerCurveContinuous = @"continuous";
+CALayerCornerCurve const kCACornerCurveCircular = @"circular";
+UIFontDescriptorSystemDesign const UIFontDescriptorSystemDesignDefault = @"UIFontDescriptorSystemDesignDefault";
+UIFontDescriptorSystemDesign const UIFontDescriptorSystemDesignMonospaced = @"UIFontDescriptorSystemDesignMonospaced";
+UIFontDescriptorSystemDesign const UIFontDescriptorSystemDesignRounded = @"UIFontDescriptorSystemDesignRounded";
+UIFontDescriptorSystemDesign const UIFontDescriptorSystemDesignSerif = @"UIFontDescriptorSystemDesignSerif";
+UITextContentType const UITextContentTypeOneTimeCode = @"one-time-code";
+#endif
 
 // On iOS 10 arm64, libobjc does NOT export _objc_debug_isa_class_mask.
 // Swift 5 runtime (libswiftCore.dylib) has a weak import for _objc_debug_isa_class_mask.
@@ -83,6 +102,7 @@ void* $s7Network10NWEndpointOMa(long long) { return nullptr; }
 void* $s7Network6NWPathVMa(long long) { return nullptr; }
 }
 
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH
 static void dummy_setContentInsetAdjustmentBehavior(id self, SEL _cmd, NSInteger behavior) {
     (void)self; (void)_cmd; (void)behavior;
 }
@@ -154,3 +174,4 @@ static void install_ios10_runtime_fallbacks() {
         }
     }
 }
+#endif
