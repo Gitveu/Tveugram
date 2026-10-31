@@ -3,6 +3,46 @@
 #include <optional>
 #include <variant>
 #include <any>
+#include <dlfcn.h>
+
+// On iOS 10 arm64, libobjc does NOT export _objc_debug_isa_class_mask.
+// Swift 5 runtime (libswiftCore.dylib) has a weak import for _objc_debug_isa_class_mask.
+// If not found, Swift defaults _swift_isaMask to -1 (0xffffffffffffffffULL), which breaks
+// all dynamic method lookups on Swift classes that inherit from Objective-C classes
+// (like ImmediateTextNode, ASDisplayNode, etc.) because the Objective-C runtime on iOS 10 arm64
+// uses non-pointer isas with magic bits in bits 33..63 (ISA_MASK = 0x00000001fffffff8ULL).
+//
+// By exporting _objc_debug_isa_class_mask here with default visibility, dyld satisfies
+// libswiftCore's weak import at launch.
+// In addition, an early constructor explicitly sets _swift_isaMask via dlsym to guarantee
+// correct initialization.
+extern "C" {
+#if TARGET_OS_SIMULATOR
+#if __x86_64__
+__attribute__((visibility("default"))) uintptr_t _objc_debug_isa_class_mask = 0x00007ffffffffff8ULL;
+#else
+__attribute__((visibility("default"))) uintptr_t _objc_debug_isa_class_mask = 0x00000001fffffff8ULL;
+#endif
+#else
+#if __arm64__
+__attribute__((visibility("default"))) uintptr_t _objc_debug_isa_class_mask = 0x00000001fffffff8ULL;
+#else
+__attribute__((visibility("default"))) uintptr_t _objc_debug_isa_class_mask = (uintptr_t)-1;
+#endif
+#endif
+}
+
+__attribute__((constructor(101)))
+static void fixup_swift_isa_mask() {
+#if !TARGET_OS_SIMULATOR && defined(__arm64__)
+    uintptr_t *maskPtr = (uintptr_t *)dlsym(RTLD_DEFAULT, "_swift_isaMask");
+    if (maskPtr) {
+        NSLog(@"[LegacyCppCompat] _swift_isaMask at %p was 0x%lx, setting to 0x1fffffff8",
+              maskPtr, (unsigned long)*maskPtr);
+        *maskPtr = 0x00000001fffffff8ULL;
+    }
+#endif
+}
 
 // Compatibility definitions for C++17 exception types that are not present
 // in the iOS 10.3 /usr/lib/libc++.1.dylib runtime.

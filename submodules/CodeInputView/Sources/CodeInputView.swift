@@ -46,8 +46,6 @@ public final class CodeInputView: ASDisplayNode, UITextFieldDelegate {
             super.init()
             
             self.addSubnode(self.textNode)
-            self.view.addSubview(self.backgroundView)
-            
             self.clipsToBounds = true
         }
         
@@ -58,6 +56,7 @@ public final class CodeInputView: ASDisplayNode, UITextFieldDelegate {
         override func didLoad() {
             super.didLoad()
             
+            self.view.insertSubview(self.backgroundView, at: 0)
             self.textNode.layer.anchorPoint = CGPoint(x: 0.5, y: 1.0)
         }
         

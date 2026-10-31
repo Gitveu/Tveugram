@@ -477,9 +477,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         super.didLoad()
         
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
-        #if DEBUG
         self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
-        #endif
     }
     
     private var animationSnapshotView: UIView?
@@ -651,9 +649,13 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     }
     
     @objc private func debugQrTap(_ recognizer: UITapGestureRecognizer) {
-        if self.qrNode == nil {
+        if let qrNode = self.qrNode {
+            qrNode.removeFromSupernode()
+            self.qrNode = nil
+        } else {
+            let qrSize: CGFloat = min(220.0, self.bounds.width - 40.0)
             let qrNode = ASImageNode()
-            qrNode.frame = CGRect(origin: CGPoint(x: 16.0, y: 64.0 + 16.0), size: CGSize(width: 200.0, height: 200.0))
+            qrNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels((self.bounds.width - qrSize) / 2.0), y: 70.0), size: CGSize(width: qrSize, height: qrSize))
             self.qrNode = qrNode
             self.addSubnode(qrNode)
             
