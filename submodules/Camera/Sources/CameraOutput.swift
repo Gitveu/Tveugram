@@ -147,6 +147,7 @@ final class CameraOutput: NSObject {
     }
     
     func configure(for session: CameraSession, device: CameraDevice, input: CameraInput, previewView: CameraSimplePreviewView?, audio: Bool, photo: Bool, metadata: Bool) {
+        self.currentPosition = device.position
         if session.session.canAddOutput(self.videoOutput) {
             if session.hasMultiCam {
                 session.session.addOutputWithNoConnections(self.videoOutput)
@@ -344,7 +345,11 @@ final class CameraOutput: NSObject {
             return .complete()
         }
         
-        Logger.shared.log("CameraOutput", "startRecording")
+        if let position {
+            self.currentPosition = position
+        }
+        
+        Logger.shared.log("CameraOutput", "startRecording, position: \(self.currentPosition)")
         
         self.currentMode = mode
         self.lastSampleTimestamp = nil
@@ -440,6 +445,9 @@ final class CameraOutput: NSObject {
         if case .dualCamera = mode, let position {
             videoRecorder?.markPositionChange(position: position, time: .zero)
         } else if case .roundVideo = mode {
+            if let position {
+                videoRecorder?.markPositionChange(position: position, time: .zero)
+            }
             additionalOutput?.masterOutput = self
         }
         
