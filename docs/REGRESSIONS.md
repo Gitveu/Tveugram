@@ -149,11 +149,6 @@
   5. `-[NSKeyedUnarchiver initForReadingFromData:error:]` (транслируется в `initForReadingWithData:`)
 - **Статус:** Исправлено в билде 100003 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
 
-
-
-
-
-
 ---
 
 ## 9. Пустой экран выбора кода страны (P1)
@@ -209,6 +204,23 @@
   4. `+[NSKeyedUnarchiver unarchivedObjectOfClasses:fromData:error:]`
   5. `-[NSKeyedUnarchiver initForReadingFromData:error:]` (транслируется в `initForReadingWithData:`)
 - **Статус:** Исправлено в билде 100003 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
+---
+
+## 15. Падение в RecaptchaEnterprise (Thread 29: rVMQ): dyld NULL dereference на NWEndpoint.hostPort и _ArrayBuffer (P0)
+- **Симптом:**
+  При вводе номера телефона США в билде 100003 происходил краш в потоке JavaScript VM очереди `rVMQ`.
+  Крэш-лог: `Telegram-2026-10-31-230212.ips`
+  - PC: `0x101e557e8` (`drXdknf1.uB9RArtM(_:)` в `RecaptchaEnterprise`)
+  - Инструкция: `ldr w8, [x8]` по адресу `[0x4ce5800]` где `x8 = 0x0` (NULL dereference).
+  - Причина: По релокации `0x21d4` в `A2zXm1wS.o` слот GOT ссылался на символ `_$s7Network10NWEndpointO8hostPortyA2C4HostO_AC0D0VtcACmFWC` (`NWEndpoint.hostPort(host:port:)`). В Swift конструктор случая enum генерируется только при сборке с `-enable-library-evolution` (resilient enums в Apple Network.framework). В нашем шиме `LegacyNetwork` флаг не был включен, `Port.init(rawValue:)` не возвращал Optional, а `NWError` был объявлен структурой (`V`), а не enum (`O`). Из-за этого dyld не смог связать символы и оставил GOT-слот равным 0x0. Также Recaptcha требовала специализации Swift `_ArrayBuffer` для класса `NWConnection`.
+- **Устранение:**
+  1. В `submodules/LegacyNetwork/BUILD` добавлен флаг `-enable-library-evolution`.
+  2. В `LegacyNetwork.swift`: `Port.init?(rawValue:)` объявлен failable, `NWError` объявлен как `enum`.
+  3. В `submodules/LegacyCppCompat.mm` добавлены assembly-трамплины прямой передачи (`b`) для специализаций `_ArrayBuffer._getElementSlowPath` и `_ArrayBuffer._consumeAndCreateNew` на базовые `yXl_Ts5` функции `libswiftCore`, полностью идентичные по ABI классу `NWConnection`.
+  4. Проверено по dSYM и Mach-O: все 34 символа `Network` и `_ArrayBuffer` экспортируются и корректно связываются (смещение `0x000000000432525c` и др.).
+- **Статус:** Исправлено в билде 100004 (IPA 94 МБ), загружен на iPhone 5s в `/Downloads/Telegram.ipa`.
+
 
 
 

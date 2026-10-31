@@ -8,6 +8,7 @@ swift_library(
     ]),
     copts = [
         "-warnings-as-errors",
+        "-enable-library-evolution",
     ],
     visibility = [
         "//visibility:public",

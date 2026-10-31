@@ -265,3 +265,32 @@ static void install_ios10_runtime_fallbacks() {
     }
 }
 #endif
+
+#if defined(__arm64__)
+// Generic specializations of Swift._ArrayBuffer for Network.NWConnection required by RecaptchaEnterprise.
+// Since NWConnection is a Swift class (AnyObject), its array buffer representation and calling
+// conventions are identical to the AnyObject specialization (yXl_Ts5) exported by libswiftCore.
+__asm__(
+    ".text\n"
+    ".align 2\n"
+    ".globl _$ss12_ArrayBufferV19_getElementSlowPathyyXlSiF7Network12NWConnectionC_Tg5\n"
+    "_$ss12_ArrayBufferV19_getElementSlowPathyyXlSiF7Network12NWConnectionC_Tg5:\n"
+    "    b _$ss12_ArrayBufferV19_getElementSlowPathyyXlSiFyXl_Ts5\n"
+    "\n"
+    ".align 2\n"
+    ".globl _$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtF7Network12NWConnectionC_Tg5\n"
+    "_$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtF7Network12NWConnectionC_Tg5:\n"
+    "    b _$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtFyXl_Ts5\n"
+);
+#elif defined(__x86_64__)
+__asm__(
+    ".text\n"
+    ".globl _$ss12_ArrayBufferV19_getElementSlowPathyyXlSiF7Network12NWConnectionC_Tg5\n"
+    "_$ss12_ArrayBufferV19_getElementSlowPathyyXlSiF7Network12NWConnectionC_Tg5:\n"
+    "    jmp _$ss12_ArrayBufferV19_getElementSlowPathyyXlSiFyXl_Ts5\n"
+    "\n"
+    ".globl _$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtF7Network12NWConnectionC_Tg5\n"
+    "_$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtF7Network12NWConnectionC_Tg5:\n"
+    "    jmp _$ss12_ArrayBufferV20_consumeAndCreateNew14bufferIsUnique15minimumCapacity13growForAppendAByxGSb_SiSbtFyXl_Ts5\n"
+);
+#endif

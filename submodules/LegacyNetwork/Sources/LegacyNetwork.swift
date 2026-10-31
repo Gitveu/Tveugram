@@ -33,7 +33,7 @@ public enum NWEndpoint: @unchecked Sendable {
     }
     public struct Port: RawRepresentable, @unchecked Sendable {
         public var rawValue: UInt16
-        public init(rawValue: UInt16) {
+        public init?(rawValue: UInt16) {
             self.rawValue = rawValue
         }
     }
@@ -47,8 +47,10 @@ public final class NWParameters: @unchecked Sendable {
     public init() {}
 }
 
-public struct NWError: Error, Equatable, @unchecked Sendable {
-    public init() {}
+public enum NWError: Error, Equatable, @unchecked Sendable {
+    case posix(Int32)
+    case dns(Int32)
+    case tls(OSStatus)
 }
 
 public final class NWConnection: @unchecked Sendable {
