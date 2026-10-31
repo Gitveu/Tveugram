@@ -110,23 +110,29 @@
 
 ---
 
-## 11. Падение на экране ввода кода авторизации: SIGSEGV в CodeInputView.update / Swift isaMask (P0)
-- **Симптом:** Сервер успешно отправляет проверочный код в активный аккаунт Telegram, но в момент перехода на экран ввода кода (`AuthorizationSequenceCodeEntryController`) приложение крашится:
+## 12. Падение на экране ввода кода: разыменование nil kCACornerCurveContinuous из-за Swift WMO (P0)
+- **Симптом:** При попытке авторизации по номеру телефона сервер успешно отправляет проверочный код, но при открытии экрана ввода кода приложение аварийно завершается:
+  - Incident: `Telegram-2026-10-31-171916.ips`
   - Exception Type: `EXC_BAD_ACCESS (SIGSEGV)`
   - Exception Subtype: `KERN_INVALID_ADDRESS at 0x0000000000000000`
-  - Thread 0 Crashed: `CodeInputView.update(theme:prefix:count:width:compact:) (CodeInputView.swift:374)`
+  - PC: `0x102613a2c` (`TelegramUIFramework + 0xdefa2c` в `CodeInputView.update`)
+  - Ассемблер места падения: `ldr x8, [x8]` где `x8 = 0x4ce56d0` (указатель на `_kCACornerCurveContinuous`)
 - **Причина:**
-  1. **Фундаментальная несовместимость рантайма Swift 5 с iOS 10 arm64 (`_swift_isaMask`):**
-     Начиная со Swift 5.0, компилятор для динамического вызова методов Swift-классов, наследующих от классов Objective-C (`ImmediateTextNode` -> `TextNode` -> `ASDisplayNode`), генерирует маскирование `isa & _swift_isaMask` для извлечения адреса `Class` из non-pointer `isa`.
-     В `libswiftCore.dylib` символ `_objc_debug_isa_class_mask` слабо импортируется из системной `libobjc.dylib`. Однако в iOS 10.3.3 `libobjc` не экспортирует `_objc_debug_isa_class_mask` (он появился только в iOS 11/12). Рантайм Swift при отсутствии символа ошибочно выставляет `_swift_isaMask = (uintptr_t)-1` (`0xffffffffffffffffULL`), полагая, что платформа не использует non-pointer isa. На iOS 10 arm64 non-pointer isa активно используется и содержит magic bits в битах 33..63 (`ISA_MASK = 0x00000001fffffff8ULL`). В итоге маска `-1` оставляла magic bits в адресе класса, что приводило к вызову vtable по мусорному адресу и обнулению регистра `x22`, вызывая немедленный SIGSEGV при разыменовании `0x0`.
-  2. В `CodeInputView.swift` обращение к `self.view.addSubview(self.backgroundView)` находилось прямо внутри `ASDisplayNode.init()`, вызывая форсированную синхронную инициализацию UIKit-представления до добавления узла в иерархию отображения.
-  3. Жест авторизации через QR-код (`debugQrTap`) на экране ввода номера телефона был заблокирован директивой `#if DEBUG`.
+  В `CodeInputView.swift:98` присутствовал вызов:
+  ```swift
+  if #available(iOS 13.0, *) {
+      self.backgroundView.layer.cornerCurve = .continuous
+  }
+  ```
+  При сборке с флагом `-O` / Whole Module Optimization (WMO) компилятор Swift вынес чтение константы `kCACornerCurveContinuous` наружу (hoisting) до проверки `#available(iOS 13.0, *)`.
+  Так как на iOS 10.3 константа отсутствует в системном `QuartzCore.framework`, слот GOT dyld оставался равным `0x0`. Команда `ldr x8, [x8]` разыменовывала нулевой указатель и приводила к мгновенному крашу.
 - **Устранение:**
-  1. В `submodules/LegacyCppCompat.mm` объявлена и экспортирована глобальная переменная `uintptr_t _objc_debug_isa_class_mask = 0x00000001fffffff8ULL`, удовлетворяющая слабый импорт `libswiftCore.dylib`.
-  2. Добавлен конструктор раннего приоритета `fixup_swift_isa_mask()` (`__attribute__((constructor(101)))`), явно патчащий `_swift_isaMask` по `dlsym(RTLD_DEFAULT, "_swift_isaMask")` значением `0x00000001fffffff8ULL`.
-  3. В `CodeInputView.swift` вызов `insertSubview(self.backgroundView, at: 0)` перенесён из `init()` в метод жизненного цикла `didLoad()`.
-  4. В `AuthorizationSequencePhoneEntryControllerNode.swift` снята директива `#if DEBUG` с `debugQrTap` (жест по тексту подсказки) и улучшено центрирование QR-кода на узком экране 320pt.
-- **Статус:** Исправлено в коммите `dae4f0b99e`. IPA собран и загружен на подключенный iPhone 5s по USB.
+  1. В `submodules/CodeInputView/Sources/CodeInputView.swift` удалено свойство `self.backgroundView.layer.cornerCurve = .continuous`.
+  2. В `submodules/LegacyCppCompat.mm` определены и экспортированы глобальные фолбэк-константы (`kCACornerCurveContinuous`, `kCACornerCurveCircular`, `UIFontDescriptorSystemDesign*`, `UITextContentTypeOneTimeCode`), что защищает от подобных оптимизаций компилятора в других местах кода.
+  3. В `submodules/AuthorizationUI/Sources/AuthorizationSequencePhoneEntryControllerNode.swift` добавлена синяя интерактивная кнопка «Войти по QR-коду» («Log in with QR Code») для удобного входа по QR без необходимости вводить номер.
+- **Статус:** Исправлено в коммите `b978eee1a0`. Новый IPA (94 МБ) собран и загружен по USB на iPhone 5s в `/Downloads/Telegram.ipa`.
+
+
 
 
 ---
@@ -146,21 +152,27 @@
 
 ---
 
-## 11. Падение на экране ввода кода авторизации: SIGSEGV в CodeInputView.update / Swift isaMask (P0)
-- **Симптом:** Сервер успешно отправляет проверочный код в активный аккаунт Telegram, но в момент перехода на экран ввода кода (`AuthorizationSequenceCodeEntryController`) приложение крашится:
+## 12. Падение на экране ввода кода: разыменование nil kCACornerCurveContinuous из-за Swift WMO (P0)
+- **Симптом:** При попытке авторизации по номеру телефона сервер успешно отправляет проверочный код, но при открытии экрана ввода кода приложение аварийно завершается:
+  - Incident: `Telegram-2026-10-31-171916.ips`
   - Exception Type: `EXC_BAD_ACCESS (SIGSEGV)`
   - Exception Subtype: `KERN_INVALID_ADDRESS at 0x0000000000000000`
-  - Thread 0 Crashed: `CodeInputView.update(theme:prefix:count:width:compact:) (CodeInputView.swift:374)`
+  - PC: `0x102613a2c` (`TelegramUIFramework + 0xdefa2c` в `CodeInputView.update`)
+  - Ассемблер места падения: `ldr x8, [x8]` где `x8 = 0x4ce56d0` (указатель на `_kCACornerCurveContinuous`)
 - **Причина:**
-  1. **Фундаментальная несовместимость рантайма Swift 5 с iOS 10 arm64 (`_swift_isaMask`):**
-     Начиная со Swift 5.0, компилятор для динамического вызова методов Swift-классов, наследующих от классов Objective-C (`ImmediateTextNode` -> `TextNode` -> `ASDisplayNode`), генерирует маскирование `isa & _swift_isaMask` для извлечения адреса `Class` из non-pointer `isa`.
-     В `libswiftCore.dylib` символ `_objc_debug_isa_class_mask` слабо импортируется из системной `libobjc.dylib`. Однако в iOS 10.3.3 `libobjc` не экспортирует `_objc_debug_isa_class_mask` (он появился только в iOS 11/12). Рантайм Swift при отсутствии символа ошибочно выставляет `_swift_isaMask = (uintptr_t)-1` (`0xffffffffffffffffULL`), полагая, что платформа не использует non-pointer isa. На iOS 10 arm64 non-pointer isa активно используется и содержит magic bits в битах 33..63 (`ISA_MASK = 0x00000001fffffff8ULL`). В итоге маска `-1` оставляла magic bits в адресе класса, что приводило к вызову vtable по мусорному адресу и обнулению регистра `x22`, вызывая немедленный SIGSEGV при разыменовании `0x0`.
-  2. В `CodeInputView.swift` обращение к `self.view.addSubview(self.backgroundView)` находилось прямо внутри `ASDisplayNode.init()`, вызывая форсированную синхронную инициализацию UIKit-представления до добавления узла в иерархию отображения.
-  3. Жест авторизации через QR-код (`debugQrTap`) на экране ввода номера телефона был заблокирован директивой `#if DEBUG`.
+  В `CodeInputView.swift:98` присутствовал вызов:
+  ```swift
+  if #available(iOS 13.0, *) {
+      self.backgroundView.layer.cornerCurve = .continuous
+  }
+  ```
+  При сборке с флагом `-O` / Whole Module Optimization (WMO) компилятор Swift вынес чтение константы `kCACornerCurveContinuous` наружу (hoisting) до проверки `#available(iOS 13.0, *)`.
+  Так как на iOS 10.3 константа отсутствует в системном `QuartzCore.framework`, слот GOT dyld оставался равным `0x0`. Команда `ldr x8, [x8]` разыменовывала нулевой указатель и приводила к мгновенному крашу.
 - **Устранение:**
-  1. В `submodules/LegacyCppCompat.mm` объявлена и экспортирована глобальная переменная `uintptr_t _objc_debug_isa_class_mask = 0x00000001fffffff8ULL`, удовлетворяющая слабый импорт `libswiftCore.dylib`.
-  2. Добавлен конструктор раннего приоритета `fixup_swift_isa_mask()` (`__attribute__((constructor(101)))`), явно патчащий `_swift_isaMask` по `dlsym(RTLD_DEFAULT, "_swift_isaMask")` значением `0x00000001fffffff8ULL`.
-  3. В `CodeInputView.swift` вызов `insertSubview(self.backgroundView, at: 0)` перенесён из `init()` в метод жизненного цикла `didLoad()`.
-  4. В `AuthorizationSequencePhoneEntryControllerNode.swift` снята директива `#if DEBUG` с `debugQrTap` (жест по тексту подсказки) и улучшено центрирование QR-кода на узком экране 320pt.
-- **Статус:** Исправлено в коммите `dae4f0b99e`. IPA собран и загружен на подключенный iPhone 5s по USB.
+  1. В `submodules/CodeInputView/Sources/CodeInputView.swift` удалено свойство `self.backgroundView.layer.cornerCurve = .continuous`.
+  2. В `submodules/LegacyCppCompat.mm` определены и экспортированы глобальные фолбэк-константы (`kCACornerCurveContinuous`, `kCACornerCurveCircular`, `UIFontDescriptorSystemDesign*`, `UITextContentTypeOneTimeCode`), что защищает от подобных оптимизаций компилятора в других местах кода.
+  3. В `submodules/AuthorizationUI/Sources/AuthorizationSequencePhoneEntryControllerNode.swift` добавлена синяя интерактивная кнопка «Войти по QR-коду» («Log in with QR Code») для удобного входа по QR без необходимости вводить номер.
+- **Статус:** Исправлено в коммите `b978eee1a0`. Новый IPA (94 МБ) собран и загружен по USB на iPhone 5s в `/Downloads/Telegram.ipa`.
+
+
 
