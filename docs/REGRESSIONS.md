@@ -110,6 +110,18 @@
 
 ---
 
+## 10. Падение при вызове Recaptcha: dyld can't resolve _$s7Network13NWPathMonitorCMa (P0)
+- **Симптом:** При вводе номера телефона и запросе авторизации приложение мгновенно падало с ошибкой dyld:
+  `DYLD, can't resolve symbol _$s7Network13NWPathMonitorCMa in .../TelegramUIFramework.framework/TelegramUIFramework because dependent dylib #22 could not be loaded`
+- **Причина:**
+  Сервер Telegram при авторизации запрашивает внешнюю верификацию reCAPTCHA. В `AppDelegate.swift` вызывался Google SDK `Recaptcha.fetchClient(withSiteKey:)`. Закрытый SDK `RecaptchaEnterprise.framework` скомпилирован под iOS 12+ и использует `NWPathMonitor` из `Network.framework`. Поскольку на iOS 10 `Network.framework` отсутствует в операционной системе, обращение к метаданным типа `NWPathMonitor` приводило к аварийному останову dyld.
+- **Устранение:**
+  1. В `AppDelegate.swift` вызов `Recaptcha.fetchClient` изолирован условием `if #available(iOS 12.0, *)`. На iOS 10 обработчик `externalRecaptchaRequestVerification` сразу возвращает сигнал со значением `RECAPTCHA_TIMEOUT`. Сервер Telegram, получив тайм-аут reCAPTCHA, штатно переходит на отправку кода через SMS/звонок.
+  2. В `LegacyCppCompat.mm` определены экспортируемые заглушки для всех используемых символов `Network.framework` (`_$s7Network13NWPathMonitorCMa`, `_$s7Network13NWPathMonitorCMn`, `_$s7Network12NWConnectionCMa`, `_$s7Network12NWParametersCMa` и др.), гарантируя, что dyld никогда не сможет упасть из-за неразрешённых символов сетевого фреймворка.
+- **Статус:** Исправлено в коммите `577d0c2da9`, IPA собран и отправлен на iPhone 5s по USB.
+
+---
+
 ## 9. Пустой экран выбора кода страны (P1)
 - **Симптом:** При открытии экрана выбора страны таблица отображалась пустой (только разделители/белое поле и открытая клавиатура), страны и телефонные коды отсутствовали.
 - **Причина:**
@@ -122,3 +134,15 @@
   3. В парсерах `PhoneCountries.txt` поддержана обработка как `\r\n`, так и `\n`.
   4. В `AuthorizationSequenceCountrySelectionControllerNode.swift` добавлен вызов `reloadData()` при инициализации и скорректирован нижний инсет таблицы с учётом высоты клавиатуры `layout.inputHeight`.
 - **Статус:** Исправлено в коммите `d59ef37035`, IPA собран и загружен на устройство по USB.
+
+---
+
+## 10. Падение при вызове Recaptcha: dyld can't resolve _$s7Network13NWPathMonitorCMa (P0)
+- **Симптом:** При вводе номера телефона и запросе авторизации приложение мгновенно падало с ошибкой dyld:
+  `DYLD, can't resolve symbol _$s7Network13NWPathMonitorCMa in .../TelegramUIFramework.framework/TelegramUIFramework because dependent dylib #22 could not be loaded`
+- **Причина:**
+  Сервер Telegram при авторизации запрашивает внешнюю верификацию reCAPTCHA. В `AppDelegate.swift` вызывался Google SDK `Recaptcha.fetchClient(withSiteKey:)`. Закрытый SDK `RecaptchaEnterprise.framework` скомпилирован под iOS 12+ и использует `NWPathMonitor` из `Network.framework`. Поскольку на iOS 10 `Network.framework` отсутствует в операционной системе, обращение к метаданным типа `NWPathMonitor` приводило к аварийному останову dyld.
+- **Устранение:**
+  1. В `AppDelegate.swift` вызов `Recaptcha.fetchClient` изолирован условием `if #available(iOS 12.0, *)`. На iOS 10 обработчик `externalRecaptchaRequestVerification` сразу возвращает сигнал со значением `RECAPTCHA_TIMEOUT`. Сервер Telegram, получив тайм-аут reCAPTCHA, штатно переходит на отправку кода через SMS/звонок.
+  2. В `LegacyCppCompat.mm` определены экспортируемые заглушки для всех используемых символов `Network.framework` (`_$s7Network13NWPathMonitorCMa`, `_$s7Network13NWPathMonitorCMn`, `_$s7Network12NWConnectionCMa`, `_$s7Network12NWParametersCMa` и др.), гарантируя, что dyld никогда не сможет упасть из-за неразрешённых символов сетевого фреймворка.
+- **Статус:** Исправлено в коммите `577d0c2da9`, IPA собран и отправлен на iPhone 5s по USB.
