@@ -173,7 +173,12 @@ typedef enum
         _queue = [[SQueue alloc] init];
         
         _previousDuration = 0.0;
-        _preferredPosition = AVCaptureDevicePositionFront;
+        NSString *cameraPref = [[NSUserDefaults standardUserDefaults] stringForKey:@"slopgram_video_message_camera"];
+        if ([cameraPref isEqualToString:@"back"]) {
+            _preferredPosition = AVCaptureDevicePositionBack;
+        } else {
+            _preferredPosition = AVCaptureDevicePositionFront;
+        }
         
         self.isImportant = true;
         _controlsFrame = controlsFrame;
@@ -1060,7 +1065,7 @@ typedef enum
     CGFloat minSize = MIN(thumbnailImage.size.width, thumbnailImage.size.height);
     CGFloat maxSize = MAX(thumbnailImage.size.width, thumbnailImage.size.height);
     
-    bool mirrored = true;
+    bool mirrored = (_preferredPosition == AVCaptureDevicePositionFront);
     UIImageOrientation orientation = [self orientationForThumbnailWithTransform:_capturePipeline.videoTransform mirrored:mirrored];
     
     UIImage *image = TGPhotoEditorCrop(thumbnailImage, nil, orientation, 0.0f, CGRectMake((maxSize - minSize) / 2.0f, 0.0f, minSize, minSize), mirrored, CGSizeMake(240.0f, 240.0f), thumbnailImage.size, true);

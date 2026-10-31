@@ -535,6 +535,7 @@ private enum PeerInfoSettingsSection {
     case profile
     case premiumManagement
     case stars
+    case slopgram
 }
 
 private enum PeerInfoReportType {
@@ -1006,6 +1007,10 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
     let languageName = presentationData.strings.primaryComponent.localizedName
     items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 4, label: .text(languageName.isEmpty ? presentationData.strings.Localization_LanguageName : languageName), text: presentationData.strings.Settings_AppLanguage, icon: PresentationResourcesSettings.language, action: {
         interaction.openSettings(.language)
+    }))
+    
+    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 7, text: "Slopgram", icon: PresentationResourcesSettings.slopgram, action: {
+        interaction.openSettings(.slopgram)
     }))
     
     let premiumConfiguration = PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 })
@@ -10632,6 +10637,8 @@ final class PeerInfoScreenNode: ViewControllerTracingNode, PeerInfoScreenNodePro
             if let starsContext = self.controller?.starsContext {
                 push(self.context.sharedContext.makeStarsTransactionsScreen(context: self.context, starsContext: starsContext))
             }
+        case .slopgram:
+            push(slopgramSettingsController(context: self.context))
         }
     }
     
