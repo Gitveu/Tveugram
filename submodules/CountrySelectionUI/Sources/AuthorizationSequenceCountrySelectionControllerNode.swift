@@ -19,7 +19,6 @@ private func loadCountryCodes() -> [(String, Int)] {
     }
     
     let delimiter = ";"
-    let endOfLine = "\n"
     
     var result: [(String, Int)] = []
     
@@ -42,7 +41,14 @@ private func loadCountryCodes() -> [(String, Int)] {
             break
         }
                 
-        let maybeNameRange = data.range(of: endOfLine, options: [], range: patternRange.upperBound ..< data.endIndex)
+        let nameRange1 = data.range(of: "\r\n", options: [], range: patternRange.upperBound ..< data.endIndex)
+        let nameRange2 = data.range(of: "\n", options: [], range: patternRange.upperBound ..< data.endIndex)
+        var maybeNameRange: Range<String.Index>?
+        if let nameRange1 = nameRange1, let nameRange2 = nameRange2 {
+            maybeNameRange = nameRange1.lowerBound < nameRange2.lowerBound ? nameRange1 : nameRange2
+        } else {
+            maybeNameRange = nameRange1 ?? nameRange2
+        }
         
         if let countryCodeInt = Int(countryCode) {
             result.append((countryId, countryCodeInt))
@@ -269,11 +275,16 @@ final class AuthorizationSequenceCountrySelectionControllerNode: ASDisplayNode, 
         
         self.view.addSubview(self.tableView)
         self.view.addSubview(self.searchTableView)
+        
+        self.tableView.reloadData()
     }
     
     func containerLayoutUpdated(_ layout: ContainerViewLayout, navigationBarHeight: CGFloat, transition: ContainedViewLayoutTransition) {
-        self.tableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
-        self.searchTableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: layout.intrinsicInsets.bottom, right: 0.0)
+        let bottomInset = max(layout.intrinsicInsets.bottom, layout.inputHeight ?? 0.0)
+        self.tableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: bottomInset, right: 0.0)
+        self.searchTableView.contentInset = UIEdgeInsets(top: 0.0, left: 0.0, bottom: bottomInset, right: 0.0)
+        self.tableView.scrollIndicatorInsets = self.tableView.contentInset
+        self.searchTableView.scrollIndicatorInsets = self.searchTableView.contentInset
         transition.updateFrame(view: self.tableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
         transition.updateFrame(view: self.searchTableView, frame: CGRect(origin: CGPoint(x: 0.0, y: navigationBarHeight), size: CGSize(width: layout.size.width, height: layout.size.height - navigationBarHeight)))
     }

@@ -21,7 +21,6 @@ private func loadCountryCodes() -> [Country] {
     }
     
     let delimiter = ";"
-    let endOfLine = "\r\n"
     
     var result: [Country] = []
     var countriesByPrefix: [String: (Country, Country.CountryCode)] = [:]
@@ -49,9 +48,16 @@ private func loadCountryCodes() -> [Country] {
         
         let pattern = String(data[idRange.upperBound ..< patternRange.lowerBound])
         
-        let maybeNameRange = data.range(of: endOfLine, options: [], range: patternRange.upperBound ..< data.endIndex)
+        let nameRange1 = data.range(of: "\r\n", options: [], range: patternRange.upperBound ..< data.endIndex)
+        let nameRange2 = data.range(of: "\n", options: [], range: patternRange.upperBound ..< data.endIndex)
+        var maybeNameRange: Range<String.Index>?
+        if let nameRange1 = nameRange1, let nameRange2 = nameRange2 {
+            maybeNameRange = nameRange1.lowerBound < nameRange2.lowerBound ? nameRange1 : nameRange2
+        } else {
+            maybeNameRange = nameRange1 ?? nameRange2
+        }
         
-        let countryName = locale.localizedString(forIdentifier: countryId) ?? ""
+        let countryName = locale.localizedString(forRegionCode: countryId) ?? locale.localizedString(forIdentifier: countryId) ?? ""
         if let _ = Int(countryCode) {
             let code = Country.CountryCode(code: countryCode, prefixes: [], patterns: !pattern.isEmpty ? [pattern] : [])
             let country = Country(id: countryId, name: countryName, localizedName: nil, countryCodes: [code], hidden: false)
@@ -77,21 +83,23 @@ private var countryCodesByPrefix: [String: (Country, Country.CountryCode)] = [:]
 public func loadServerCountryCodes(accountManager: AccountManager<TelegramAccountManagerTypes>, engine: TelegramEngineUnauthorized, completion: @escaping () -> Void) {
     let _ = (engine.localization.getCountriesList(accountManager: accountManager, langCode: nil)
     |> deliverOnMainQueue).start(next: { countries in
-        countryCodes = countries
-        
-        var countriesByPrefix: [String: (Country, Country.CountryCode)] = [:]
-        for country in countries {
-            for code in country.countryCodes {
-                if !code.prefixes.isEmpty {
-                    for prefix in code.prefixes {
-                        countriesByPrefix["\(code.code)\(prefix)"] = (country, code)
+        if !countries.isEmpty {
+            countryCodes = countries
+            
+            var countriesByPrefix: [String: (Country, Country.CountryCode)] = [:]
+            for country in countries {
+                for code in country.countryCodes {
+                    if !code.prefixes.isEmpty {
+                        for prefix in code.prefixes {
+                            countriesByPrefix["\(code.code)\(prefix)"] = (country, code)
+                        }
+                    } else {
+                        countriesByPrefix[code.code] = (country, code)
                     }
-                } else {
-                    countriesByPrefix[code.code] = (country, code)
                 }
             }
+            countryCodesByPrefix = countriesByPrefix
         }
-        countryCodesByPrefix = countriesByPrefix
                 
         Queue.mainQueue().async {
             completion()
@@ -102,21 +110,23 @@ public func loadServerCountryCodes(accountManager: AccountManager<TelegramAccoun
 public func loadServerCountryCodes(accountManager: AccountManager<TelegramAccountManagerTypes>, engine: TelegramEngine, completion: @escaping () -> Void) {
     let _ = (engine.localization.getCountriesList(accountManager: accountManager, langCode: nil)
     |> deliverOnMainQueue).start(next: { countries in
-        countryCodes = countries
+        if !countries.isEmpty {
+            countryCodes = countries
 
-        var countriesByPrefix: [String: (Country, Country.CountryCode)] = [:]
-        for country in countries {
-            for code in country.countryCodes {
-                if !code.prefixes.isEmpty {
-                    for prefix in code.prefixes {
-                        countriesByPrefix["\(code.code)\(prefix)"] = (country, code)
+            var countriesByPrefix: [String: (Country, Country.CountryCode)] = [:]
+            for country in countries {
+                for code in country.countryCodes {
+                    if !code.prefixes.isEmpty {
+                        for prefix in code.prefixes {
+                            countriesByPrefix["\(code.code)\(prefix)"] = (country, code)
+                        }
+                    } else {
+                        countriesByPrefix[code.code] = (country, code)
                     }
-                } else {
-                    countriesByPrefix[code.code] = (country, code)
                 }
             }
+            countryCodesByPrefix = countriesByPrefix
         }
-        countryCodesByPrefix = countriesByPrefix
         Queue.mainQueue().async {
             completion()
         }
@@ -195,15 +205,23 @@ private func removePlus(_ text: String?) -> String {
 
 public final class AuthorizationSequenceCountrySelectionController: ViewController {
     static func countries() -> [Country] {
+        if countryCodes.isEmpty {
+            countryCodes = loadCountryCodes()
+        }
         return countryCodes
     }
     
     public static func setupCountryCodes(countries: [Country], codesByPrefix: [String: (Country, Country.CountryCode)]) {
-        countryCodes = countries
-        countryCodesByPrefix = codesByPrefix
+        if !countries.isEmpty {
+            countryCodes = countries
+            countryCodesByPrefix = codesByPrefix
+        }
     }
     
     public static func lookupCountryNameById(_ id: String, strings: PresentationStrings) -> String? {
+        if countryCodes.isEmpty {
+            countryCodes = loadCountryCodes()
+        }
         for country in countryCodes {
             if id == country.id {
                 let locale = localeWithStrings(strings)
@@ -218,10 +236,16 @@ public final class AuthorizationSequenceCountrySelectionController: ViewControll
     }
         
     static func lookupCountryById(_ id: String) -> Country? {
+        if countryCodes.isEmpty {
+            countryCodes = loadCountryCodes()
+        }
         return countryCodes.first { $0.id == id }
     }
     
     public static func lookupCountryIdByNumber(_ number: String, preferredCountries: [String: String]) -> (Country, Country.CountryCode)? {
+        if countryCodes.isEmpty {
+            countryCodes = loadCountryCodes()
+        }
         let number = removePlus(number)
         var results: [(Country, Country.CountryCode)]? = nil
         if number.count == 1, let preferredCountryId = preferredCountries[number], let country = lookupCountryById(preferredCountryId), let code = country.countryCodes.first {

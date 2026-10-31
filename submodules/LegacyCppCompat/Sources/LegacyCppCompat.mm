@@ -41,6 +41,24 @@ static UIEdgeInsets dummy_safeAreaInsets(id self, SEL _cmd) {
     return UIEdgeInsetsZero;
 }
 
+static void dummy_setWaitsForConnectivity(id self, SEL _cmd, BOOL wait) {
+    (void)self; (void)_cmd; (void)wait;
+}
+
+static BOOL dummy_waitsForConnectivity(id self, SEL _cmd) {
+    (void)self; (void)_cmd;
+    return NO;
+}
+
+static void dummy_setMultipathServiceType(id self, SEL _cmd, NSInteger type) {
+    (void)self; (void)_cmd; (void)type;
+}
+
+static NSInteger dummy_multipathServiceType(id self, SEL _cmd) {
+    (void)self; (void)_cmd;
+    return 0;
+}
+
 __attribute__((constructor))
 static void install_ios10_runtime_fallbacks() {
     if (![UIScrollView instancesRespondToSelector:@selector(setContentInsetAdjustmentBehavior:)]) {
@@ -58,5 +76,25 @@ static void install_ios10_runtime_fallbacks() {
                         @selector(safeAreaInsets),
                         (IMP)dummy_safeAreaInsets,
                         "{UIEdgeInsets=dddd}@:");
+    }
+    Class urlConfigClass = [NSURLSessionConfiguration class];
+    if (![urlConfigClass instancesRespondToSelector:@selector(setWaitsForConnectivity:)]) {
+        class_addMethod(urlConfigClass, @selector(setWaitsForConnectivity:), (IMP)dummy_setWaitsForConnectivity, "v@:B");
+        class_addMethod(urlConfigClass, @selector(waitsForConnectivity), (IMP)dummy_waitsForConnectivity, "B@:");
+    }
+    if (![urlConfigClass instancesRespondToSelector:@selector(setMultipathServiceType:)]) {
+        class_addMethod(urlConfigClass, @selector(setMultipathServiceType:), (IMP)dummy_setMultipathServiceType, "v@:q");
+        class_addMethod(urlConfigClass, @selector(multipathServiceType), (IMP)dummy_multipathServiceType, "q@:");
+    }
+    Class nscfConfigClass = objc_getClass("__NSCFURLSessionConfiguration");
+    if (nscfConfigClass) {
+        if (![nscfConfigClass instancesRespondToSelector:@selector(setWaitsForConnectivity:)]) {
+            class_addMethod(nscfConfigClass, @selector(setWaitsForConnectivity:), (IMP)dummy_setWaitsForConnectivity, "v@:B");
+            class_addMethod(nscfConfigClass, @selector(waitsForConnectivity), (IMP)dummy_waitsForConnectivity, "B@:");
+        }
+        if (![nscfConfigClass instancesRespondToSelector:@selector(setMultipathServiceType:)]) {
+            class_addMethod(nscfConfigClass, @selector(setMultipathServiceType:), (IMP)dummy_setMultipathServiceType, "v@:q");
+            class_addMethod(nscfConfigClass, @selector(multipathServiceType), (IMP)dummy_multipathServiceType, "q@:");
+        }
     }
 }
