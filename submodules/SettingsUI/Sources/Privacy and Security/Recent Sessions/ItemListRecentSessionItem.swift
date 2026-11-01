@@ -310,7 +310,7 @@ class ItemListRecentSessionItemNode: ItemListRevealOptionsItemNode {
                 updatedIcon = iconForSession(item.session).0
             }
             
-            let appName = (item.session.isCurrent || (item.session.appName == "Telegram iOS" && item.session.deviceModel == "Tveugram")) ? "Tveugram iOS" : item.session.appName
+            let appName = (item.session.isCurrent || item.session.appName == "Telegram iOS") ? "Tveugram iOS" : item.session.appName
             let appString = "\(appName) \(appVersion)"
             
             titleAttributedString = NSAttributedString(string: deviceString, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor)

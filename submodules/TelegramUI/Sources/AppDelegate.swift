@@ -470,7 +470,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         })
         self.clearNotificationsManager = clearNotificationsManager
         
-        let appVersion = "1.0 (1000011)"
+        let appVersion = "1.0 (1000012)"
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
         let appGroupName = "group.\(baseAppBundleId)"
@@ -579,7 +579,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                 }).startStandalone(next: subscriber.putNext, error: subscriber.putError, completed: subscriber.putCompletion)
             }
             |> runOn(Queue.mainQueue())
-        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: "Tveugram", useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
+        }, autolockDeadine: autolockDeadine, encryptionProvider: OpenSSLEncryptionProvider(), deviceModelName: nil, useBetaFeatures: !buildConfig.isAppStoreBuild, isICloudEnabled: buildConfig.isICloudEnabled)
         
         guard let appGroupUrl = maybeAppGroupUrl else {
             self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
