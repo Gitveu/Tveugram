@@ -306,7 +306,8 @@ private class RecentSessionScreenNode: ViewControllerTracingNode, ASScrollViewDe
                     deviceString = session.deviceModel
                 }
                 title = deviceString
-                device = "\(session.appName) \(appVersion)"
+                let appName = (session.isCurrent || (session.appName == "Telegram iOS" && session.deviceModel == "Tveugram")) ? "Tveugram iOS" : session.appName
+                device = "\(appName) \(appVersion)"
                 location = session.country
                 ip = session.ip
             

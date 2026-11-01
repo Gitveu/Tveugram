@@ -470,7 +470,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         })
         self.clearNotificationsManager = clearNotificationsManager
         
-        let appVersion = "1.0 (1000010)"
+        let appVersion = "1.0 (1000011)"
         
         let baseAppBundleId = Bundle.main.bundleIdentifier!
         let appGroupName = "group.\(baseAppBundleId)"

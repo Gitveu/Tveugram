@@ -375,7 +375,7 @@ static NSData *base64_decode(NSString *str) {
         }
         _deviceModelName = deviceModelName;
 #if TARGET_OS_IPHONE
-        _systemVersion = [[UIDevice currentDevice] systemVersion];
+        _systemVersion = [NSString stringWithFormat:@"iOS %@", [[UIDevice currentDevice] systemVersion]];
 #else
         NSProcessInfo *pInfo = [NSProcessInfo processInfo];
         _systemVersion = [[[pInfo operatingSystemVersionString] componentsSeparatedByString:@" "] objectAtIndex:1];
