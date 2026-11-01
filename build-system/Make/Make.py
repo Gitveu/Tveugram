@@ -45,6 +45,7 @@ class BazelCommandLine:
         self.show_actions = False
         self.enable_sandbox = False
         self.disable_provisioning_profiles = False
+        self.generate_dsym = False
 
         self.common_args = [
             # https://docs.bazel.build/versions/master/command-line-reference.html
@@ -137,6 +138,9 @@ class BazelCommandLine:
     def set_show_actions(self, show_actions):
         self.show_actions = show_actions
 
+    def set_generate_dsym(self, generate_dsym):
+        self.generate_dsym = generate_dsym
+
     def set_enable_sandbox(self, enable_sandbox):
         self.enable_sandbox = enable_sandbox
 
@@ -206,24 +210,19 @@ class BazelCommandLine:
                 '--watchos_cpus=arm64_32'
             ] + self.common_debug_args
         elif configuration == 'release_arm64':
+            dsym_args = []
+            if self.generate_dsym:
+                dsym_args = [
+                    '--apple_generate_dsym',
+                    '--output_groups=+dsyms',
+                ]
             self.configuration_args = [
                 # bazel optimized build configuration
                 '-c', 'opt',
 
                 # Build single-architecture binaries. It is almost 2 times faster is 32-bit support is not required.
                 '--ios_multi_cpus=arm64',
-
-                # Always build universal Watch binaries.
-                '--watchos_cpus=arm64_32',
-
-                # Generate DSYM files when building.
-                '--apple_generate_dsym',
-
-                # Require DSYM files as build output.
-                '--output_groups=+dsyms',
-
-                #'--@build_bazel_rules_swift//swift:copt="-num-threads 0"',
-            ] + self.common_release_args
+            ] + dsym_args + self.common_release_args
         else:
             raise Exception('Unknown configuration {}'.format(configuration))
 
@@ -682,6 +681,8 @@ def build(bazel, arguments):
     bazel_command_line.set_enable_sandbox(arguments.sandbox)
 
     bazel_command_line.set_split_swiftmodules(arguments.enableParallelSwiftmoduleGeneration)
+    if hasattr(arguments, 'generateDsym') and arguments.generateDsym is not None:
+        bazel_command_line.set_generate_dsym(arguments.generateDsym)
 
     bazel_command_line.invoke_build()
 
@@ -1062,6 +1063,12 @@ if __name__ == '__main__':
         action='store_true',
         default=False,
         help='Enable sandbox.',
+    )
+    buildParser.add_argument(
+        '--generateDsym',
+        action='store_true',
+        default=False,
+        help='Generate dSYM files (omitted by default for faster builds).',
     )
     buildParser.add_argument(
         '--outputBuildArtifactsPath',

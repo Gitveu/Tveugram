@@ -1009,7 +1009,7 @@ private func settingsItems(data: PeerInfoScreenData?, context: AccountContext, p
         interaction.openSettings(.language)
     }))
     
-    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 7, text: "Slopgram", icon: PresentationResourcesSettings.slopgram, action: {
+    items[.advanced]!.append(PeerInfoScreenDisclosureItem(id: 7, text: "Tveugram", icon: PresentationResourcesSettings.tveugram, action: {
         interaction.openSettings(.slopgram)
     }))
     
